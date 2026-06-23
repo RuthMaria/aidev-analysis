@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Pesquisa — Qualidade de Código Gerado por Agentes de IA (AIDev)</title>
+<style>
+  :root{
+    --azul:#1f4e79; --azul-claro:#4C78A8; --cinza:#f4f6f9; --texto:#222;
+    --borda:#dde3ea; --verde:#2e7d32; --vermelho:#c0392b; --amarelo:#b7791f;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--texto); line-height:1.65;
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#fff;
+  }
+  /* layout */
+  .wrap{display:flex; max-width:1200px; margin:0 auto;}
+  nav.toc{
+    position:sticky; top:0; align-self:flex-start; width:280px; min-width:280px;
+    height:100vh; overflow-y:auto; padding:28px 20px; background:var(--cinza);
+    border-right:1px solid var(--borda); font-size:.9rem;
+  }
+  nav.toc h2{font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:#777; margin:18px 0 8px}
+  nav.toc a{display:block; color:var(--azul); text-decoration:none; padding:4px 0; border-radius:4px}
+  nav.toc a:hover{color:var(--azul-claro); text-decoration:underline}
+  main{flex:1; padding:48px 56px; min-width:0; max-width:880px}
+  /* tipografia */
+  h1{color:var(--azul); font-size:2.1rem; line-height:1.25; margin:0 0 6px}
+  h2{color:var(--azul); font-size:1.5rem; margin-top:48px; padding-bottom:6px; border-bottom:2px solid var(--azul)}
+  h3{color:var(--azul-claro); font-size:1.18rem; margin-top:32px}
+  .subtitulo{font-size:1.1rem; color:#555; margin-top:0}
+  .meta{font-size:.85rem; color:#888; margin:18px 0 0; border-top:1px solid var(--borda); padding-top:12px}
+  p{margin:14px 0}
+  code{background:var(--cinza); padding:2px 6px; border-radius:4px; font-size:.9em; font-family:Consolas,Monaco,monospace}
+  pre{background:#1e1e1e; color:#e6e6e6; padding:16px 18px; border-radius:8px; overflow-x:auto; font-size:.86rem}
+  pre code{background:none; color:inherit; padding:0}
+  a{color:var(--azul-claro)}
+  /* tabelas */
+  table{border-collapse:collapse; width:100%; margin:20px 0; font-size:.92rem}
+  th,td{border:1px solid var(--borda); padding:9px 12px; text-align:left}
+  th{background:var(--azul); color:#fff; font-weight:600}
+  tr:nth-child(even) td{background:var(--cinza)}
+  td.num{text-align:right; font-variant-numeric:tabular-nums}
+  /* callouts */
+  .box{border-left:5px solid var(--azul-claro); background:#eef3f9; padding:14px 18px; border-radius:0 8px 8px 0; margin:22px 0}
+  .box.alerta{border-color:var(--amarelo); background:#fdf6e7}
+  .box.destaque{border-color:var(--verde); background:#eaf5ea}
+  .box h4{margin:0 0 6px; color:var(--azul)}
+  .box.alerta h4{color:var(--amarelo)}
+  .box.destaque h4{color:var(--verde)}
+  /* barras CSS */
+  .bar-row{display:flex; align-items:center; margin:6px 0; font-size:.9rem}
+  .bar-label{width:130px; min-width:130px; font-weight:600}
+  .bar-track{flex:1; background:var(--cinza); border-radius:4px; overflow:hidden; height:24px; position:relative}
+  .bar-fill{height:100%; background:var(--azul-claro); display:flex; align-items:center; justify-content:flex-end; color:#fff; font-size:.8rem; padding-right:8px; white-space:nowrap}
+  .bar-fill.humano{background:#888}
+  .bar-fill.destaque{background:var(--verde)}
+  /* RQ chips */
+  .rq{display:inline-block; background:var(--azul); color:#fff; font-size:.78rem; font-weight:700; padding:2px 10px; border-radius:12px; margin-right:8px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin:20px 0}
+  .card{background:var(--cinza); border:1px solid var(--borda); border-radius:10px; padding:16px; text-align:center}
+  .card .big{font-size:1.8rem; font-weight:700; color:var(--azul); display:block}
+  .card .lbl{font-size:.8rem; color:#666}
+  footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--borda); font-size:.85rem; color:#888}
+  @media(max-width:860px){
+    nav.toc{display:none} main{padding:28px 20px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="toc">
+  <strong style="color:var(--azul); font-size:1rem">📘 Guia de Pesquisa</strong>
+  <h2>Conteúdo</h2>
+  <a href="#resumo">Resumo</a>
+  <a href="#contexto">1. Contexto e motivação</a>
+  <a href="#objetivo">2. Objetivo e questões</a>
+  <a href="#dataset">3. O dataset AIDev</a>
+  <a href="#estrutura">4. Estrutura dos dados</a>
+  <a href="#metodologia">5. Metodologia</a>
+  <a href="#resultados">6. Resultados</a>
+  <a href="#discussao">7. Discussão</a>
+  <a href="#ameacas">8. Ameaças à validade</a>
+  <a href="#futuro">9. Trabalhos futuros</a>
+  <a href="#reprodutibilidade">10. Reprodutibilidade</a>
+  <a href="#referencias">11. Referências</a>
+</nav>
+
+<main>
+
+<h1>Qualidade de Código Gerado por Agentes de IA</h1>
+<p class="subtitulo">Um estudo empírico em larga escala usando o dataset AIDev</p>
+<p class="meta">
+  Guia de pesquisa de mestrado &middot; Autora: Ruth Maria &middot;
+  Atualizado em 22 de junho de 2026 &middot;
+  Repositório: <a href="https://github.com/RuthMaria/aidev-analysis">github.com/RuthMaria/aidev-analysis</a>
+</p>
+
+<!-- ================= RESUMO ================= -->
+<section id="resumo">
+<h2>Resumo</h2>
+<p>
+Agentes autônomos de programação (OpenAI Codex, Devin, GitHub Copilot, Cursor e
+Claude Code) passaram a abrir <em>pull requests</em> (PRs) em projetos reais de
+código aberto, atuando como "colegas de equipe" de desenvolvedores humanos —
+fenômeno que a literatura chama de <strong>Engenharia de Software (SE) 3.0</strong>.
+Esta pesquisa investiga <strong>a qualidade do código produzido por esses
+agentes</strong>, usando o dataset <strong>AIDev</strong> (~932 mil PRs em mais de
+116 mil repositórios). Como o dataset não contém uma métrica direta de qualidade,
+adotamos <strong>proxies observáveis</strong> — taxa de aceitação (merge), taxa de
+rejeição, esforço de revisão — e comparamos os agentes entre si, contra um
+baseline humano, controlando pelo tipo de tarefa.
+</p>
+<div class="box destaque">
+  <h4>Principal achado preliminar</h4>
+  A taxa de aceitação varia muito entre agentes (de <strong>59% a 88%</strong>).
+  O OpenAI Codex supera inclusive os humanos em aceitação, enquanto Claude Code
+  empata com humanos (76,8%) e Copilot/Devin ficam abaixo. A qualidade percebida
+  cai sistematicamente em tarefas mais complexas (<code>feat</code>, <code>fix</code>)
+  comparada a tarefas simples (<code>docs</code>, <code>build</code>).
+</div>
+</section>
+
+<!-- ================= 1. CONTEXTO ================= -->
+<section id="contexto">
+<h2>1. Contexto e motivação</h2>
+<p>
+A engenharia de software vive uma transição. Após a SE 1.0 (processos manuais) e a
+SE 2.0 (apoio de IA como autocompletar), a <strong>SE 3.0</strong> caracteriza-se
+por agentes de IA que executam tarefas de ponta a ponta: leem uma issue, escrevem o
+código, abrem o PR e respondem à revisão. Diferente de assistentes que apenas
+sugerem trechos, esses agentes contribuem como autores de PRs.
+</p>
+<p>
+Isso levanta uma pergunta central para a indústria e a academia:
+<strong>o código gerado por agentes de IA tem qualidade suficiente para ser
+aceito em projetos reais?</strong> Responder a isso de forma empírica — e não
+anedótica — exige dados em larga escala de contribuições reais de agentes, que é
+justamente o que o dataset AIDev fornece.
+</p>
+<div class="box">
+  <h4>Por que isso importa para a tese</h4>
+  Entender a qualidade dos PRs de agentes ajuda a (a) calibrar a confiança que
+  mantenedores devem depositar em contribuições automatizadas, (b) identificar em
+  quais tipos de tarefa os agentes são mais/menos confiáveis e (c) apontar lacunas
+  de qualidade que ferramentas futuras precisam endereçar.
+</div>
+</section>
+
+<!-- ================= 2. OBJETIVO ================= -->
+<section id="objetivo">
+<h2>2. Objetivo e questões de pesquisa</h2>
+<p>
+<strong>Objetivo geral:</strong> avaliar empiricamente a qualidade do código
+produzido por agentes autônomos de IA em pull requests de projetos open-source,
+comparando-os entre si e com desenvolvedores humanos.
+</p>
+<p>As questões de pesquisa (QPs) que guiam o estudo:</p>
+<p><span class="rq">QP1</span> <strong>Aceitação.</strong> Qual a taxa de
+<em>merge</em> (e de rejeição) dos PRs de cada agente? PRs aceitos são um proxy de
+qualidade percebida pelos mantenedores.</p>
+<p><span class="rq">QP2</span> <strong>Esforço de revisão.</strong> Quanto
+retrabalho um PR de agente exige antes de ser aceito (pedidos de mudança e
+comentários de revisão)?</p>
+<p><span class="rq">QP3</span> <strong>Comparação com humanos.</strong> Como os
+agentes se posicionam frente a um baseline de PRs humanos nas mesmas métricas?</p>
+<p><span class="rq">QP4</span> <strong>Efeito do tipo de tarefa.</strong> A
+qualidade percebida varia conforme a natureza da tarefa (<code>feat</code>,
+<code>fix</code>, <code>docs</code>…)?</p>
+<div class="box alerta">
+  <h4>Adapte as QPs à sua banca</h4>
+  As quatro QPs acima refletem o que o dataset permite responder com confiança.
+  Você pode refiná-las ou acrescentar uma QP5 sobre análise estática do código
+  (ver §9), dependendo do escopo combinado com seu orientador.
+</div>
+</section>
+
+<!-- ================= 3. DATASET ================= -->
+<section id="dataset">
+<h2>3. O dataset AIDev</h2>
+<p>
+<strong>AIDev</strong> é um dataset público (licença CC-BY-4.0) que captura
+contribuições de cinco agentes de codificação em projetos reais do GitHub,
+coletado via a API REST do GitHub. Foi publicado por Hao Li, Haoxiang Zhang e
+Ahmed E. Hassan e serviu de base para o <em>Mining Challenge</em> do MSR 2026.
+</p>
+
+<div class="grid">
+  <div class="card"><span class="big">932.791</span><span class="lbl">pull requests</span></div>
+  <div class="card"><span class="big">116.211</span><span class="lbl">repositórios</span></div>
+  <div class="card"><span class="big">72.189</span><span class="lbl">desenvolvedores</span></div>
+  <div class="card"><span class="big">5</span><span class="lbl">agentes de IA</span></div>
+</div>
+
+<p>Distribuição de PRs por agente:</p>
+<table>
+  <thead><tr><th>Agente</th><th>#PRs</th><th>#Desenvolvedores</th><th>#Repositórios</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">61.653</td><td class="num">84.704</td></tr>
+    <tr><td>GitHub Copilot</td><td class="num">50.447</td><td class="num">—</td><td class="num">14.492</td></tr>
+    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">9.658</td><td class="num">12.699</td></tr>
+    <tr><td>Devin</td><td class="num">29.744</td><td class="num">—</td><td class="num">4.747</td></tr>
+    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">1.643</td><td class="num">1.915</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num"><strong>932.791</strong></td><td class="num"><strong>72.189</strong></td><td class="num"><strong>116.211</strong></td></tr>
+  </tbody>
+</table>
+<p>
+O dataset também oferece o subconjunto <strong>AIDev-pop</strong> (apenas repos com
+mais de 100 estrelas), com tabelas extras de revisão, comentários e commits, além
+de um conjunto de <strong>PRs humanos</strong> (de repos com 500+ estrelas) que
+serve de baseline para comparação.
+</p>
+</section>
+
+<!-- ================= 4. ESTRUTURA ================= -->
+<section id="estrutura">
+<h2>4. Estrutura dos dados</h2>
+<p>
+Os dados são tabelas normalizadas (arquivos <code>.parquet</code>) que se conectam
+por chaves consistentes (<code>id</code>/<code>pr_id</code>, <code>repo_id</code>,
+<code>user_id</code>). As tabelas usadas neste estudo:
+</p>
+<table>
+  <thead><tr><th>Tabela</th><th>Conteúdo</th><th>Uso na pesquisa</th></tr></thead>
+  <tbody>
+    <tr><td><code>all_pull_request</code></td><td>Todos os PRs: título, corpo, agente, estado, datas de criação/fechamento/merge</td><td>QP1, QP4</td></tr>
+    <tr><td><code>human_pull_request</code></td><td>PRs autorados por humanos (baseline)</td><td>QP3</td></tr>
+    <tr><td><code>pull_request</code></td><td>PRs do subset AIDev-pop (repos populares)</td><td>QP2</td></tr>
+    <tr><td><code>pr_reviews</code></td><td>Revisões formais (<code>APPROVED</code>, <code>CHANGES_REQUESTED</code>…)</td><td>QP2</td></tr>
+    <tr><td><code>pr_review_comments_v2</code></td><td>Comentários inline nas revisões</td><td>QP2</td></tr>
+    <tr><td><code>pr_task_type</code></td><td>Classificação da tarefa via LLM (estilo Conventional Commits)</td><td>QP4</td></tr>
+    <tr><td><code>pr_commit_details</code></td><td>Diffs/patches por arquivo, linhas adicionadas/removidas</td><td>trabalho futuro (§9)</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ================= 5. METODOLOGIA ================= -->
+<section id="metodologia">
+<h2>5. Metodologia</h2>
+
+<h3>5.1 O problema da definição de "qualidade"</h3>
+<p>
+O dataset <strong>não traz uma coluna de qualidade</strong>. Qualidade de software é
+um construto multidimensional (corretude, manutenibilidade, legibilidade…). Em um
+estudo de mineração de repositórios, ela é operacionalizada por
+<strong>proxies observáveis</strong> — sinais registrados pelo processo de
+contribuição que se correlacionam com qualidade.
+</p>
+
+<h3>5.2 Proxies adotados</h3>
+<table>
+  <thead><tr><th>Proxy</th><th>Como é medido</th><th>O que indica</th></tr></thead>
+  <tbody>
+    <tr><td>Taxa de aceitação</td><td><code>merged_at</code> preenchido ÷ total de PRs</td><td>qualidade aceita pelos mantenedores</td></tr>
+    <tr><td>Taxa de rejeição</td><td><code>closed_at</code> preenchido e <code>merged_at</code> nulo</td><td>código recusado</td></tr>
+    <tr><td>Pedidos de mudança</td><td>média de revisões <code>CHANGES_REQUESTED</code> por PR</td><td>retrabalho exigido</td></tr>
+    <tr><td>Comentários de revisão</td><td>média de comentários inline por PR</td><td>volume de problemas apontados</td></tr>
+  </tbody>
+</table>
+<div class="box">
+  <h4>Por que a taxa de merge é o proxy principal</h4>
+  Um PR mesclado significa que mantenedores humanos — que conhecem o projeto —
+  julgaram o código bom o bastante para integrar à base. É o sinal de qualidade
+  mais direto e menos ruidoso disponível no dataset, embora meça
+  <em>aceitação</em>, não corretude absoluta (ver §8).
+</div>
+
+<h3>5.3 Procedimento de análise</h3>
+<ol>
+  <li>Derivar <code>merged</code> e <code>rejected</code> de cada PR a partir das datas.</li>
+  <li>Agregar por agente para QP1 e QP2.</li>
+  <li>Concatenar PRs humanos (rótulo <code>Human</code>) para QP3.</li>
+  <li>Juntar (<code>join</code>) com <code>pr_task_type</code> por <code>id</code> para QP4.</li>
+  <li>Para o esforço de revisão, ligar revisões e comentários ao PR via <code>pr_id</code>
+      / <code>pull_request_review_id</code>.</li>
+</ol>
+<p>
+A análise é totalmente reproduzível pelo script <code>quality_analysis.py</code>
+(ver §10), escrito em Python com <code>pandas</code>.
+</p>
+</section>
+
+<!-- ================= 6. RESULTADOS ================= -->
+<section id="resultados">
+<h2>6. Resultados</h2>
+<p>
+Os resultados abaixo foram gerados sobre a versão completa do AIDev
+(<code>all_pull_request.parquet</code>) e o subset AIDev-pop, em 22/06/2026.
+</p>
+
+<h3>6.1 <span class="rq">QP1</span> Aceitação e rejeição por agente</h3>
+<table>
+  <thead><tr><th>Agente</th><th>#PRs</th><th>% mesclado</th><th>% rejeitado</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">87,7</td><td class="num">5,8</td></tr>
+    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">76,8</td><td class="num">15,4</td></tr>
+    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">70,5</td><td class="num">8,0</td></tr>
+    <tr><td>Devin</td><td class="num">29.744</td><td class="num">64,4</td><td class="num">29,9</td></tr>
+    <tr><td>Copilot</td><td class="num">50.447</td><td class="num">59,1</td><td class="num">20,7</td></tr>
+  </tbody>
+</table>
+<p>Taxa de merge (quanto maior, melhor a aceitação):</p>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
+<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:76.8%">76,8%</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track"><div class="bar-fill" style="width:70.5%">70,5%</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:64.4%">64,4%</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill" style="width:59.1%">59,1%</div></div></div>
+
+<h3>6.2 <span class="rq">QP2</span> Esforço de revisão (AIDev-pop)</h3>
+<table>
+  <thead><tr><th>Agente</th><th>Média de revisões/PR</th><th>Média <code>CHANGES_REQUESTED</code>/PR</th><th>Média comentários inline/PR</th></tr></thead>
+  <tbody>
+    <tr><td>Claude Code</td><td class="num">1,41</td><td class="num">0,03</td><td class="num">2,61</td></tr>
+    <tr><td>Copilot</td><td class="num">3,24</td><td class="num">0,22</td><td class="num">3,07</td></tr>
+    <tr><td>Cursor</td><td class="num">1,16</td><td class="num">0,02</td><td class="num">0,96</td></tr>
+    <tr><td>Devin</td><td class="num">1,19</td><td class="num">0,06</td><td class="num">1,04</td></tr>
+    <tr><td>OpenAI Codex</td><td class="num">0,21</td><td class="num">0,01</td><td class="num">0,18</td></tr>
+  </tbody>
+</table>
+<p>
+O <strong>Copilot</strong> concentra o maior esforço de revisão (mais pedidos de
+mudança e mais comentários), coerente com sua menor taxa de aceitação. O
+<strong>Codex</strong> recebe pouquíssima revisão — o que pode indicar PRs simples
+ou um fluxo de aceitação mais automático (ver §8).
+</p>
+
+<h3>6.3 <span class="rq">QP3</span> Agentes vs. humanos</h3>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
+<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill destaque" style="width:76.8%">76,8%</div></div></div>
+<div class="bar-row"><div class="bar-label">Humanos</div><div class="bar-track"><div class="bar-fill humano" style="width:76.8%">76,8%</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track"><div class="bar-fill" style="width:70.5%">70,5%</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:64.4%">64,4%</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill" style="width:59.1%">59,1%</div></div></div>
+<p>
+O baseline humano tem <strong>76,8%</strong> de aceitação (sobre 6.618 PRs).
+<strong>Codex fica acima dos humanos</strong>; <strong>Claude Code empata</strong>;
+e os demais ficam abaixo. Esse é um resultado forte para a tese — mas precisa ser
+lido com as ressalvas da §8 (volumes e composição de tarefas muito diferentes).
+</p>
+
+<h3>6.4 <span class="rq">QP4</span> Taxa de merge por tipo de tarefa (%)</h3>
+<table>
+  <thead><tr><th>Agente</th><th>docs</th><th>build</th><th>feat</th><th>fix</th><th>refactor</th><th>test</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAI Codex</td><td class="num">92,2</td><td class="num">87,0</td><td class="num">80,7</td><td class="num">81,6</td><td class="num">79,8</td><td class="num">83,8</td></tr>
+    <tr><td>Claude Code</td><td class="num">75,0</td><td class="num">87,5</td><td class="num">56,8</td><td class="num">57,4</td><td class="num">50,0</td><td class="num">50,0</td></tr>
+    <tr><td>Cursor</td><td class="num">74,4</td><td class="num">57,1</td><td class="num">60,4</td><td class="num">68,4</td><td class="num">64,9</td><td class="num">62,2</td></tr>
+    <tr><td>Devin</td><td class="num">71,3</td><td class="num">57,8</td><td class="num">54,4</td><td class="num">42,9</td><td class="num">56,8</td><td class="num">50,4</td></tr>
+    <tr><td>Copilot</td><td class="num">60,7</td><td class="num">49,6</td><td class="num">38,0</td><td class="num">42,4</td><td class="num">47,8</td><td class="num">36,5</td></tr>
+  </tbody>
+</table>
+<div class="box destaque">
+  <h4>Padrão consistente</h4>
+  Para <em>todos</em> os agentes, tarefas de <code>docs</code>/<code>build</code>
+  têm aceitação mais alta que <code>feat</code>/<code>fix</code>/<code>refactor</code>.
+  Ou seja: quanto mais o código mexe na lógica do sistema, menor a taxa de
+  aceitação — evidência de que a qualidade dos agentes ainda é mais frágil em
+  tarefas complexas.
+</div>
+</section>
+
+<!-- ================= 7. DISCUSSÃO ================= -->
+<section id="discussao">
+<h2>7. Discussão</h2>
+<p>
+<strong>Há uma clara hierarquia de aceitação entre agentes.</strong> Codex lidera
+com folga, seguido por Claude Code e Cursor; Devin e Copilot ficam atrás. A
+hierarquia em aceitação é coerente com o esforço de revisão: os agentes mais
+aceitos tendem a gerar menos pedidos de mudança.
+</p>
+<p>
+<strong>Aceitação não é corretude.</strong> Um PR pode ser mesclado por ser
+trivial, ou rejeitado por motivos não técnicos (mudança de prioridade do projeto).
+A alta aceitação do Codex combinada com revisão quase nula sugere que parte de seus
+PRs pode ser de baixa complexidade — daí a importância de controlar por tipo de
+tarefa (QP4), que mostra que a vantagem se reduz em <code>feat</code>/<code>fix</code>.
+</p>
+<p>
+<strong>O efeito do tipo de tarefa é o achado mais robusto.</strong> Por ser um
+padrão presente em todos os agentes, é menos sensível a particularidades de volume
+ou de coleta, e sustenta a tese de que agentes de IA ainda têm uma lacuna de
+qualidade em tarefas que exigem raciocínio sobre a lógica do sistema.
+</p>
+</section>
+
+<!-- ================= 8. AMEAÇAS ================= -->
+<section id="ameacas">
+<h2>8. Ameaças à validade</h2>
+<h3>Validade de construto</h3>
+<p>
+A taxa de merge mede <strong>aceitação percebida</strong>, não qualidade intrínseca.
+Projetos diferem em rigor de revisão; alguns podem aceitar PRs de bots quase
+automaticamente. Mitigação: triangular com esforço de revisão e, futuramente, com
+análise estática do código (§9).
+</p>
+<h3>Validade interna</h3>
+<p>
+Os volumes são desbalanceados (814 mil PRs do Codex vs. 5 mil do Claude Code), e a
+composição de tarefas difere entre agentes. Comparações diretas de médias podem
+enganar; por isso o controle por tipo de tarefa (QP4) e, idealmente, testes
+estatísticos e modelos de regressão são recomendados.
+</p>
+<h3>Validade externa</h3>
+<p>
+O dataset cobre até agosto de 2025 e apenas projetos públicos do GitHub. Resultados
+podem não generalizar para código privado/corporativo ou para versões mais novas
+dos agentes.
+</p>
+<h3>Validade de conclusão</h3>
+<p>
+A classificação de tipo de tarefa (<code>pr_task_type</code>) foi feita por um LLM e
+pode conter erros. Patches grandes não são fornecidos pela API do GitHub, limitando
+análises baseadas em diff.
+</p>
+</section>
+
+<!-- ================= 9. FUTURO ================= -->
+<section id="futuro">
+<h2>9. Trabalhos futuros</h2>
+<ul>
+  <li><strong>Análise estática dos patches</strong> (QP5): extrair os diffs de
+      <code>pr_commit_details</code> e rodar linters por linguagem para medir
+      densidade de problemas no próprio código, não só na aceitação.</li>
+  <li><strong>Métricas de tamanho e complexidade</strong>: relacionar linhas
+      adicionadas/removidas e número de arquivos com a chance de aceitação.</li>
+  <li><strong>Tempo de turnaround</strong>: medir <code>merged_at − created_at</code>
+      como proxy de velocidade/atrito.</li>
+  <li><strong>Modelagem estatística</strong>: regressão logística da probabilidade
+      de merge controlando por agente, tipo de tarefa, tamanho e popularidade do
+      repositório.</li>
+  <li><strong>Análise qualitativa</strong>: amostrar comentários de revisão e
+      categorizar os tipos de problema apontados (bug, estilo, segurança…).</li>
+</ul>
+</section>
+
+<!-- ================= 10. REPRODUTIBILIDADE ================= -->
+<section id="reprodutibilidade">
+<h2>10. Reprodutibilidade</h2>
+<p>Todo o código está versionado em
+<a href="https://github.com/RuthMaria/aidev-analysis">github.com/RuthMaria/aidev-analysis</a>.
+Para reproduzir os resultados:</p>
+<pre><code># 1. Instalar dependências
+pip install pandas pyarrow matplotlib huggingface_hub
+
+# 2. Explorar as tabelas do dataset
+python explore.py
+
+# 3. Gerar as métricas de qualidade (tabelas + gráficos PNG)
+python quality_analysis.py</code></pre>
+<p>
+Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local dos
+<code>.parquet</code>, defina a variável de ambiente <code>AIDEV_DATA</code>:
+</p>
+<pre><code># PowerShell (Windows)
+$env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
+python quality_analysis.py</code></pre>
+</section>
+
+<!-- ================= 11. REFERÊNCIAS ================= -->
+<section id="referencias">
+<h2>11. Referências</h2>
+<ol>
+  <li>Li, H.; Zhang, H.; Hassan, A. E. <em>The Rise of AI Teammates in Software
+      Engineering (SE) 3.0: How Autonomous Coding Agents Are Reshaping Software
+      Engineering.</em> arXiv:2507.15003, 2025.</li>
+  <li>Li, H. et al. <em>AIDev: Studying AI Coding Agents on GitHub.</em>
+      arXiv:2602.09185.</li>
+  <li>Dataset AIDev no Hugging Face:
+      <a href="https://huggingface.co/datasets/hao-li/AIDev">huggingface.co/datasets/hao-li/AIDev</a>.</li>
+  <li>MSR 2026 Mining Challenge:
+      <a href="https://2026.msrconf.org/track/msr-2026-mining-challenge">2026.msrconf.org/track/msr-2026-mining-challenge</a>.</li>
+  <li>GitHub REST API Documentation:
+      <a href="https://docs.github.com/en/rest">docs.github.com/en/rest</a>.</li>
+</ol>
+</section>
+
+<footer>
+  Guia gerado como material de apoio à dissertação de mestrado de Ruth Maria.
+  Dados: dataset AIDev (CC-BY-4.0); cada repositório de origem mantém sua licença
+  original. Resultados computados em 22/06/2026 a partir da versão do AIDev com
+  dados até agosto de 2025.
+</footer>
+
+</main>
+</div>
+</body>
+</html>
