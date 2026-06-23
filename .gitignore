@@ -1,0 +1,12 @@
+# Dados (ficam no Hugging Face, nao no GitHub)
+*.parquet
+
+# Saidas geradas
+*.png
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
