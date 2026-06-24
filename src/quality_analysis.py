@@ -78,6 +78,9 @@ def load_prs(name, agent_label=None):
     # Deriva o proxy de REJEIÇÃO (RQ1): fechado (closed_at preenchido) E nunca
     # mesclado (merged_at vazio). O '&' combina as duas condições elemento a elemento.
     df["rejected"] = df["closed_at"].notna() & df["merged_at"].isna()
+    # EM ABERTO (RQ1): nem mesclado nem fechado -> ainda sem decisão. Torna
+    # explícita a 3ª categoria, para que mesclado + rejeitado + aberto = 100%.
+    df["open"] = df["closed_at"].isna() & df["merged_at"].isna()
     return df                              # devolve o DataFrame já enriquecido
 
 
@@ -90,10 +93,13 @@ def acceptance_by_agent(df):
         n_prs=("id", "size"),              # quantos PRs cada agente tem (contagem)
         merge_rate=("merged", "mean"),     # média de True/False = proporção mesclada
         rejection_rate=("rejected", "mean"),# média de True/False = proporção rejeitada
+        open_rate=("open", "mean"),        # proporção ainda em aberto (sem decisão)
     )
     # Converte as proporções (0..1) para percentual (0..100) e arredonda a 1 casa.
+    # As três taxas somam ~100% (mesclado + rejeitado + em aberto).
     g["merge_rate"] = (g["merge_rate"] * 100).round(1)
     g["rejection_rate"] = (g["rejection_rate"] * 100).round(1)
+    g["open_rate"] = (g["open_rate"] * 100).round(1)
     # Ordena do agente mais aceito para o menos aceito.
     return g.sort_values("merge_rate", ascending=False)
 
@@ -182,6 +188,7 @@ PT_LABELS = {
     "n_prs": "#PRs",
     "merge_rate": "% mesclado",
     "rejection_rate": "% rejeitado",
+    "open_rate": "% em aberto",
     "mean_reviews": "Média revisões/PR",
     "mean_changes_requested": "Média CHANGES_REQUESTED/PR",
     "mean_inline_comments": "Média comentários inline/PR",

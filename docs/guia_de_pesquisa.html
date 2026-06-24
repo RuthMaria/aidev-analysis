@@ -321,15 +321,16 @@ mais informativa que cada RQ isolada.
 
 <h3>6.1 <span class="rq">RQ1</span> Aceitação e rejeição por agente</h3>
 <table>
-  <thead><tr><th>Agente</th><th>#PRs</th><th>% mesclado</th><th>% rejeitado</th></tr></thead>
+  <thead><tr><th>Agente</th><th>#PRs</th><th>% mesclado</th><th>% rejeitado</th><th>% em aberto</th></tr></thead>
   <tbody>
-    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">87,7</td><td class="num">5,8</td></tr>
-    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">76,8</td><td class="num">15,4</td></tr>
-    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">70,5</td><td class="num">8,0</td></tr>
-    <tr><td>Devin</td><td class="num">29.744</td><td class="num">64,4</td><td class="num">29,9</td></tr>
-    <tr><td>Copilot</td><td class="num">50.447</td><td class="num">59,1</td><td class="num">20,7</td></tr>
+    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">87,7</td><td class="num">5,8</td><td class="num">6,6</td></tr>
+    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">76,8</td><td class="num">15,4</td><td class="num">7,8</td></tr>
+    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">70,5</td><td class="num">8,0</td><td class="num">21,4</td></tr>
+    <tr><td>Devin</td><td class="num">29.744</td><td class="num">64,4</td><td class="num">29,9</td><td class="num">5,6</td></tr>
+    <tr><td>Copilot</td><td class="num">50.447</td><td class="num">59,1</td><td class="num">20,7</td><td class="num">20,3</td></tr>
   </tbody>
 </table>
+<p>As três taxas somam ~100%: todo PR está mesclado, rejeitado <em>ou</em> em aberto.</p>
 <p>Taxa de merge (quanto maior, melhor a aceitação):</p>
 <div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
 <div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:76.8%">76,8%</div></div></div>
@@ -338,12 +339,15 @@ mais informativa que cada RQ isolada.
 <div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill" style="width:59.1%">59,1%</div></div></div>
 <p>
 <strong>Discussão.</strong> A taxa de merge separa nitidamente os agentes: Codex
-lidera com folga, seguido por Claude Code e Cursor; Devin e Copilot ficam atrás. A
-rejeição conta uma história complementar e nem sempre simétrica: o <strong>Devin</strong>
-tem a maior taxa de rejeição explícita (29,9%), enquanto boa parte dos PRs de outros
-agentes não é nem mesclada nem fechada — fica em aberto. Isso já sugere que "não
-mesclado" agrega situações diferentes (recusa ativa vs. abandono), o que vale
-distinguir em análises futuras.
+lidera com folga, seguido por Claude Code e Cursor; Devin e Copilot ficam atrás.
+Mas "não mesclado" não é a mesma coisa que "rejeitado": a coluna <em>% em aberto</em>
+torna explícita uma terceira categoria — PRs ainda sem decisão. E ela é muito
+desigual: <strong>Cursor (21,4%) e Copilot (20,3%)</strong> deixam cerca de um quinto
+dos PRs em aberto, contra apenas ~6–8% de Codex, Devin e Claude Code. Isso muda a
+leitura da rejeição: o <strong>Devin</strong> tem a maior rejeição <em>explícita</em>
+(29,9%) — uma recusa ativa —, enquanto a "baixa aceitação" do Cursor se deve em boa
+parte a PRs indecisos, não a recusas. Distinguir <em>recusa</em> de <em>abandono</em>
+é essencial para não confundir os dois.
 </p>
 
 <h3>6.2 <span class="rq">RQ2</span> Esforço de revisão (AIDev-pop)</h3>
@@ -385,7 +389,10 @@ e os demais ficam abaixo.
 os melhores agentes já são competitivos com humanos. Mas a comparação exige
 humildade: os volumes são muito desbalanceados e a composição de tarefas difere
 entre humanos e agentes (ver §7). O empate em uma média agregada não significa
-equivalência tarefa a tarefa.
+equivalência tarefa a tarefa. Além disso, como a taxa é calculada sobre
+<em>todos</em> os PRs, agentes com muitos PRs <em>em aberto</em> (Cursor e Copilot,
+~20% — ver RQ1) têm a aceitação subestimada aqui: parte dos seus PRs ainda não foi
+decidida, e não necessariamente recusada.
 </p>
 
 <h3>6.4 <span class="rq">RQ4</span> Taxa de merge por tipo de tarefa (%)</h3>
