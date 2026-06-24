@@ -30,9 +30,9 @@ try:
     import matplotlib
     matplotlib.use("Agg")          # backend "Agg": salva PNG sem precisar de tela/janela
     import matplotlib.pyplot as plt
-    TEM_PLOT = True                 # flag: temos como desenhar gráficos
+    HAS_PLOT = True                 # flag: temos como desenhar gráficos
 except ImportError:
-    TEM_PLOT = False               # sem matplotlib -> gráficos serão ignorados
+    HAS_PLOT = False               # sem matplotlib -> gráficos serão ignorados
     print("[i] matplotlib nao instalado -> graficos serao pulados "
           "(pip install matplotlib)")
 
@@ -45,16 +45,16 @@ pd.set_option("display.width", 160)         # largura maior antes de quebrar lin
 DATA_DIR = os.environ.get("AIDEV_DATA", "hf://datasets/hao-li/AIDev")
 
 
-def caminho(nome):
+def path(name):
     # Monta o caminho completo de uma tabela juntando a pasta-base + nome do arquivo.
-    return f"{DATA_DIR}/{nome}"
+    return f"{DATA_DIR}/{name}"
 
 
-def carregar_prs(nome, rotulo_agente=None):
+def load_prs(name, agent_label=None):
     """Carrega uma tabela de PRs e garante as colunas que usamos."""
-    df = pd.read_parquet(caminho(nome))    # lê o .parquet para um DataFrame
-    if rotulo_agente is not None:          # PRs humanos não têm coluna 'agent';
-        df["agent"] = rotulo_agente        # então criamos uma com rótulo fixo (ex.: "Human")
+    df = pd.read_parquet(path(name))       # lê o .parquet para um DataFrame
+    if agent_label is not None:            # PRs humanos não têm coluna 'agent';
+        df["agent"] = agent_label          # então criamos uma com rótulo fixo (ex.: "Human")
     # Deriva o proxy de ACEITAÇÃO (RQ1): se 'merged_at' tem data, o PR foi mesclado.
     # .notna() devolve True/False linha a linha.
     df["merged"] = df["merged_at"].notna()
@@ -67,41 +67,41 @@ def carregar_prs(nome, rotulo_agente=None):
 # ---------------------------------------------------------------------------
 # 1 + 2. Aceitação / rejeição por agente
 # ---------------------------------------------------------------------------
-def aceitacao_por_agente(df):
+def acceptance_by_agent(df):
     # Agrupa por agente e calcula três métricas por grupo (RQ1):
     g = df.groupby("agent").agg(
         n_prs=("id", "size"),              # quantos PRs cada agente tem (contagem)
-        taxa_merge=("merged", "mean"),     # média de True/False = proporção mesclada
-        taxa_rejeicao=("rejected", "mean"),# média de True/False = proporção rejeitada
+        merge_rate=("merged", "mean"),     # média de True/False = proporção mesclada
+        rejection_rate=("rejected", "mean"),# média de True/False = proporção rejeitada
     )
     # Converte as proporções (0..1) para percentual (0..100) e arredonda a 1 casa.
-    g["taxa_merge"] = (g["taxa_merge"] * 100).round(1)
-    g["taxa_rejeicao"] = (g["taxa_rejeicao"] * 100).round(1)
+    g["merge_rate"] = (g["merge_rate"] * 100).round(1)
+    g["rejection_rate"] = (g["rejection_rate"] * 100).round(1)
     # Ordena do agente mais aceito para o menos aceito.
-    return g.sort_values("taxa_merge", ascending=False)
+    return g.sort_values("merge_rate", ascending=False)
 
 
 # ---------------------------------------------------------------------------
 # 3. Esforço de revisão
 # ---------------------------------------------------------------------------
-def esforco_de_revisao(df_pr):
+def review_effort(df_pr):
     """Junta PRs (subset AIDev-pop) com revisões e comentários inline.
 
     Usa 'pull_request.parquet' (não 'all_') porque só o subset AIDev-pop
     tem as tabelas de revisão.
     """
     # --- Parte A: revisões formais (tabela pr_reviews) ---
-    reviews = pd.read_parquet(caminho("pr_reviews.parquet"))
+    reviews = pd.read_parquet(path("pr_reviews.parquet"))
     # Marca cada revisão que pediu mudanças (estado == "CHANGES_REQUESTED").
     reviews["changes_requested"] = reviews["state"].eq("CHANGES_REQUESTED")
     # Agrega as revisões por PR: quantas revisões teve e quantas pediram mudança.
-    rev_por_pr = reviews.groupby("pr_id").agg(
+    reviews_per_pr = reviews.groupby("pr_id").agg(
         n_reviews=("id", "size"),                       # nº de revisões do PR
         n_changes_requested=("changes_requested", "sum"),# nº de "CHANGES_REQUESTED"
     )
 
     # --- Parte B: comentários inline (tabela pr_review_comments_v2) ---
-    comments = pd.read_parquet(caminho("pr_review_comments_v2.parquet"))
+    comments = pd.read_parquet(path("pr_review_comments_v2.parquet"))
     # Os comentários só referenciam a REVISÃO (pull_request_review_id), não o PR.
     # Para descobrir o pr_id de cada comentário, criamos um "mapa" id->pr_id a
     # partir de pr_reviews, renomeando a chave para casar com a coluna dos comentários.
@@ -109,13 +109,13 @@ def esforco_de_revisao(df_pr):
     # Junta o pr_id em cada comentário (left join: mantém todos os comentários).
     comments = comments.merge(rev_map, on="pull_request_review_id", how="left")
     # Conta quantos comentários inline cada PR recebeu.
-    com_por_pr = comments.groupby("pr_id").size().rename("n_inline_comments")
+    comments_per_pr = comments.groupby("pr_id").size().rename("n_inline_comments")
 
     # --- Parte C: junta tudo de volta nos PRs ---
     # Indexa os PRs por 'id' e mantém só agente + merged, para depois cruzar por pr_id.
     base = df_pr.set_index("id")[["agent", "merged"]]
     # join usa o índice (id do PR = pr_id) para anexar as contagens de A e B.
-    base = base.join(rev_por_pr).join(com_por_pr)
+    base = base.join(reviews_per_pr).join(comments_per_pr)
     # PRs sem nenhuma revisão/comentário ficam como NaN após o join -> viram 0.
     base[["n_reviews", "n_changes_requested", "n_inline_comments"]] = (
         base[["n_reviews", "n_changes_requested", "n_inline_comments"]].fillna(0)
@@ -123,39 +123,39 @@ def esforco_de_revisao(df_pr):
 
     # Média de cada métrica por agente = esforço médio de revisão por PR (RQ2).
     return base.groupby("agent").agg(
-        media_reviews=("n_reviews", "mean"),
-        media_changes_requested=("n_changes_requested", "mean"),
-        media_comentarios_inline=("n_inline_comments", "mean"),
+        mean_reviews=("n_reviews", "mean"),
+        mean_changes_requested=("n_changes_requested", "mean"),
+        mean_inline_comments=("n_inline_comments", "mean"),
     ).round(2)
 
 
 # ---------------------------------------------------------------------------
 # 5. Controle por tipo de tarefa
 # ---------------------------------------------------------------------------
-def aceitacao_por_tipo(df_pr):
+def acceptance_by_type(df_pr):
     # Lê a classificação de tipo de tarefa (feat/fix/docs...) feita por LLM.
-    tipos = pd.read_parquet(caminho("pr_task_type.parquet"))[["id", "type"]]
+    types = pd.read_parquet(path("pr_task_type.parquet"))[["id", "type"]]
     # inner join: mantém apenas PRs que têm tipo classificado.
-    m = df_pr.merge(tipos, on="id", how="inner")
+    m = df_pr.merge(types, on="id", how="inner")
     # Para cada combinação (agente, tipo), calcula a taxa de merge em % (RQ4).
     tab = m.groupby(["agent", "type"])["merged"].mean().mul(100).round(1)
     # unstack vira os 'type' em colunas -> tabela agente (linhas) x tipo (colunas).
     return tab.unstack(fill_value=float("nan"))
 
 
-def grafico_barras(serie, titulo, ylabel, arquivo):
-    if not TEM_PLOT:                 # sem matplotlib, não há o que desenhar
+def bar_chart(series, title, ylabel, file):
+    if not HAS_PLOT:                 # sem matplotlib, não há o que desenhar
         return
     # Desenha um gráfico de barras a partir de uma Series (índice = eixo X).
-    ax = serie.plot(kind="bar", figsize=(8, 5), color="#4C78A8")
-    ax.set_title(titulo)            # título do gráfico
+    ax = series.plot(kind="bar", figsize=(8, 5), color="#4C78A8")
+    ax.set_title(title)             # título do gráfico
     ax.set_ylabel(ylabel)          # rótulo do eixo Y
     ax.set_xlabel("")              # sem rótulo no eixo X (os nomes já aparecem)
     plt.xticks(rotation=30, ha="right")  # inclina os rótulos para não sobrepor
     plt.tight_layout()             # ajusta margens para nada ficar cortado
-    plt.savefig(arquivo, dpi=120)  # salva o PNG no disco
+    plt.savefig(file, dpi=120)     # salva o PNG no disco
     plt.close()                    # libera a figura da memória
-    print(f"   -> grafico salvo em {arquivo}")
+    print(f"   -> grafico salvo em {file}")
 
 
 def main():
@@ -163,35 +163,35 @@ def main():
 
     # ---- RQ1: carrega TODOS os PRs de agentes e mede aceitação/rejeição ----
     print("\n### Carregando PRs de agentes (all_pull_request) ...")
-    agentes = carregar_prs("all_pull_request.parquet")
+    agents = load_prs("all_pull_request.parquet")
 
     print("\n========== 1+2. ACEITACAO / REJEICAO POR AGENTE ==========")
-    tab_ace = aceitacao_por_agente(agentes)
-    print(tab_ace)                        # imprime a tabela no terminal
-    grafico_barras(tab_ace["taxa_merge"], # e salva o gráfico de taxa de merge
-                   "Taxa de merge por agente (%)", "% mesclado",
-                   "q_taxa_merge.png")
+    tab_acc = acceptance_by_agent(agents)
+    print(tab_acc)                        # imprime a tabela no terminal
+    bar_chart(tab_acc["merge_rate"],      # e salva o gráfico de taxa de merge
+              "Taxa de merge por agente (%)", "% mesclado",
+              "q_taxa_merge.png")
 
     # ---- RQ3: adiciona o baseline humano e compara na mesma métrica ----
     print("\n### Carregando baseline humano (human_pull_request) ...")
-    humanos = carregar_prs("human_pull_request.parquet", rotulo_agente="Human")
+    humans = load_prs("human_pull_request.parquet", agent_label="Human")
     # concat empilha os dois DataFrames; ignore_index renumera as linhas.
-    combinado = pd.concat([agentes, humanos], ignore_index=True)
+    combined = pd.concat([agents, humans], ignore_index=True)
 
     print("\n========== 4. AGENTES vs HUMANOS (taxa de merge) ==========")
     # Reaproveita a mesma função de RQ1, agora com 'Human' incluso.
-    print(aceitacao_por_agente(combinado)[["n_prs", "taxa_merge"]])
+    print(acceptance_by_agent(combined)[["n_prs", "merge_rate"]])
 
     # ---- RQ2: esforço de revisão (só existe no subset AIDev-pop) ----
     print("\n### Esforco de revisao (subset AIDev-pop) ...")
     try:
-        pop = carregar_prs("pull_request.parquet")  # PRs de repos populares
+        pop = load_prs("pull_request.parquet")  # PRs de repos populares
         print("\n========== 3. ESFORCO DE REVISAO POR AGENTE ==========")
-        tab_rev = esforco_de_revisao(pop)
-        print(tab_rev)
-        grafico_barras(tab_rev["media_changes_requested"],
-                       "Media de revisoes 'CHANGES_REQUESTED' por PR",
-                       "media por PR", "q_changes_requested.png")
+        tab_review = review_effort(pop)
+        print(tab_review)
+        bar_chart(tab_review["mean_changes_requested"],
+                  "Media de revisoes 'CHANGES_REQUESTED' por PR",
+                  "media por PR", "q_changes_requested.png")
     except FileNotFoundError as e:
         # Se as tabelas de revisão não existirem, apenas avisa e segue em frente.
         print(f"[!] pulei esforco de revisao: {e}")
@@ -199,7 +199,7 @@ def main():
     # ---- RQ4: taxa de merge controlada por tipo de tarefa ----
     print("\n========== 5. TAXA DE MERGE POR TIPO DE TAREFA (%) ==========")
     try:
-        print(aceitacao_por_tipo(agentes))
+        print(acceptance_by_type(agents))
     except FileNotFoundError as e:
         print(f"[!] pulei controle por tipo: {e}")
 

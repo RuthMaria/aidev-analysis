@@ -19,7 +19,7 @@ pd.set_option("display.width", 160)
 
 DATA_DIR = os.environ.get("AIDEV_DATA", "hf://datasets/hao-li/AIDev")
 
-TABELAS = [
+TABLES = [
     "all_pull_request.parquet",       # todos os PRs (rotulados por agente de IA)
     "all_repository.parquet",         # metadados dos repos (linguagem, estrelas...)
     "pull_request.parquet",           # subset AIDev-pop (repos > 100 estrelas)
@@ -30,20 +30,20 @@ TABELAS = [
 ]
 
 
-def caminho(nome):
-    return f"{DATA_DIR}/{nome}"
+def path(name):
+    return f"{DATA_DIR}/{name}"
 
 
 def main():
     print(f"[i] lendo de: {DATA_DIR}\n")
-    for nome in TABELAS:
+    for name in TABLES:
         try:
-            df = pd.read_parquet(caminho(nome))
+            df = pd.read_parquet(path(name))
         except FileNotFoundError:
-            print(f"[!] nao encontrado: {nome}\n")
+            print(f"[!] nao encontrado: {name}\n")
             continue
         print("=" * 80)
-        print(f"{nome}   ->   {len(df):,} linhas, {len(df.columns)} colunas")
+        print(f"{name}   ->   {len(df):,} linhas, {len(df.columns)} colunas")
         print("-" * 80)
         print("Colunas:", list(df.columns))
         print("-" * 80)
