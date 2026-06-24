@@ -45,7 +45,7 @@ try:
     HAS_PLOT = True                 # flag: temos como desenhar gráficos
 except ImportError:
     HAS_PLOT = False               # sem matplotlib -> gráficos serão ignorados
-    print("[i] matplotlib nao instalado -> graficos serao pulados "
+    print("[i] matplotlib não instalado -> gráficos serão pulados "
           "(pip install matplotlib)")
 
 # Configurações de exibição do pandas no terminal:
@@ -173,7 +173,27 @@ def bar_chart(series, title, ylabel, file):
     out = OUTPUT_DIR / file        # caminho final dentro de outputs/
     plt.savefig(out, dpi=120)      # salva o PNG no disco
     plt.close()                    # libera a figura da memória
-    print(f"\n-> grafico salvo em {out}")
+    print(f"\n-> gráfico salvo em {out}")
+
+
+# Rótulos em português para EXIBIR as tabelas (iguais ao guia de pesquisa).
+# As colunas internas continuam em inglês; só traduzimos na hora de imprimir.
+PT_LABELS = {
+    "n_prs": "#PRs",
+    "merge_rate": "% mesclado",
+    "rejection_rate": "% rejeitado",
+    "mean_reviews": "Média revisões/PR",
+    "mean_changes_requested": "Média CHANGES_REQUESTED/PR",
+    "mean_inline_comments": "Média comentários inline/PR",
+}
+
+
+def to_portuguese(table, columns_name=None):
+    """Renomeia colunas e eixos para português, apenas para exibição."""
+    t = table.rename(columns=PT_LABELS).rename_axis("Agente")
+    if columns_name is not None:        # ex.: RQ4 também nomeia o eixo das colunas
+        t = t.rename_axis(columns=columns_name)
+    return t
 
 
 def main():
@@ -182,9 +202,9 @@ def main():
     # ---- RQ1: carrega TODOS os PRs de agentes e mede aceitação/rejeição ----
     agents = load_prs("all_pull_request.parquet")
 
-    print("\n========================= RQ1. ACEITACAO / REJEICAO POR AGENTE =========================\n")
+    print("\n========================= RQ1. ACEITAÇÃO / REJEIÇÃO POR AGENTE =========================\n")
     tab_acc = acceptance_by_agent(agents)
-    print(tab_acc)                        # imprime a tabela no terminal
+    print(to_portuguese(tab_acc))         # imprime a tabela (rótulos em português)
     bar_chart(tab_acc["merge_rate"],      # e salva o gráfico de taxa de merge
               "Taxa de merge por agente (%)", "% mesclado",
               "q_taxa_merge.png")
@@ -196,25 +216,25 @@ def main():
     combined = pd.concat([agents, humans], ignore_index=True)
 
     # Reaproveita a mesma função de RQ1, agora com 'Human' incluso.
-    print(acceptance_by_agent(combined)[["n_prs", "merge_rate"]])
+    print(to_portuguese(acceptance_by_agent(combined)[["n_prs", "merge_rate"]]))
 
     # ---- RQ2: esforço de revisão (só existe no subset AIDev-pop) ----
     try:
         pop = load_prs("pull_request.parquet")  # PRs de repos populares
-        print("\n\n========================= RQ2. ESFORCO DE REVISAO POR AGENTE =========================\n")
+        print("\n\n============================ RQ2. ESFORÇO DE REVISÃO POR AGENTE ============================\n")
         tab_review = review_effort(pop)
-        print(tab_review)
+        print(to_portuguese(tab_review))
         bar_chart(tab_review["mean_changes_requested"],
-                  "Media de revisoes 'CHANGES_REQUESTED' por PR",
-                  "media por PR", "q_changes_requested.png")
+                  "Média de revisões 'CHANGES_REQUESTED' por PR",
+                  "média por PR", "q_changes_requested.png")
     except FileNotFoundError as e:
         # Se as tabelas de revisão não existirem, apenas avisa e segue em frente.
-        print(f"[!] pulei esforco de revisao: {e}")
+        print(f"[!] pulei esforço de revisão: {e}")
 
     # ---- RQ4: taxa de merge controlada por tipo de tarefa ----
-    print("\n========================= RQ4. TAXA DE MERGE POR TIPO DE TAREFA (%) =========================\n")
+    print("\n\n============================= RQ4. TAXA DE MERGE POR TIPO DE TAREFA (%) =============================\n")
     try:
-        print(acceptance_by_type(agents))
+        print(to_portuguese(acceptance_by_type(agents), columns_name="tipo"))
     except FileNotFoundError as e:
         print(f"[!] pulei controle por tipo: {e}")
 

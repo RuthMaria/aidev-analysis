@@ -50,7 +50,7 @@ def main():
         try:
             df = pd.read_parquet(path(name))
         except FileNotFoundError:
-            print(f"[!] nao encontrado: {name}\n")
+            print(f"[!] não encontrado: {name}\n")
             continue
         print("=" * 160)
         print(f"{index}º TABELA SELECIONADA \n")
