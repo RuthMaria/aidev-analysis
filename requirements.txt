@@ -2,3 +2,9 @@ pandas
 pyarrow
 matplotlib
 huggingface_hub
+
+# RQ5 - análise estática (src/static_analysis.py)
+ruff
+radon
+lizard
+bandit

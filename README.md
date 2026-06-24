@@ -17,6 +17,8 @@ O dataset não tem uma coluna "qualidade"; ela é estimada por **proxies**:
 | Comentários inline de revisão | volume de problemas apontados |
 | Comparação com humanos | baseline para todas as métricas |
 | Tipo de tarefa (`feat`/`fix`/`docs`) | controle para comparações justas |
+| Densidade de warnings (`ruff`) | problemas estáticos no próprio código (RQ5) |
+| Complexidade ciclomática (`lizard`) | quão intricado é o código (RQ5) |
 
 ## Estrutura do projeto
 
@@ -24,7 +26,8 @@ O dataset não tem uma coluna "qualidade"; ela é estimada por **proxies**:
 aidev-analysis/
 ├── src/                       # código-fonte
 │   ├── explore.py             # mostra colunas e amostras de cada tabela
-│   └── quality_analysis.py    # calcula as métricas e gera os gráficos
+│   ├── quality_analysis.py    # RQ1-RQ4: aceitação, revisão, tipo de tarefa
+│   └── static_analysis.py     # RQ5: análise estática dos patches (ruff/lizard)
 ├── docs/                      # documentação
 │   └── guia_de_pesquisa.html  # guia de pesquisa (contexto, RQs, resultados)
 ├── outputs/                   # gráficos PNG gerados pelos scripts
@@ -39,10 +42,13 @@ A partir da raiz do projeto:
 ```bash
 pip install -r requirements.txt
 python src/explore.py
-python src/quality_analysis.py
+python src/quality_analysis.py   # RQ1-RQ4
+python src/static_analysis.py    # RQ5 (análise estática)
 ```
 
-Os gráficos são salvos em `outputs/`.
+Os gráficos são salvos em `outputs/`. A RQ5 analisa por padrão uma amostra de
+arquivos Python (`AIDEV_RQ5_SAMPLE`, padrão 5000); use `AIDEV_RQ5_SAMPLE=0` para
+rodar no dataset inteiro.
 
 ### Origem dos dados
 

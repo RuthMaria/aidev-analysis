@@ -31,12 +31,12 @@ DATA_DIR = os.environ.get("AIDEV_DATA", "hf://datasets/hao-li/AIDev")
 
 TABLES = [
     "all_pull_request.parquet",       # todos os PRs (rotulados por agente de IA)
-    "all_repository.parquet",         # metadados dos repos (linguagem, estrelas...)
     "pull_request.parquet",           # subset AIDev-pop (repos > 100 estrelas)
     "pr_reviews.parquet",             # revisoes (APPROVED / CHANGES_REQUESTED...)
     "pr_review_comments_v2.parquet",  # comentarios inline de revisao
     "pr_task_type.parquet",           # tipo da tarefa (feat/fix/docs...) via LLM
     "human_pull_request.parquet",     # PRs de humanos (baseline)
+    "pr_commit_details.parquet"      # detalhes dos commits (RQ5)
 ]
 
 
