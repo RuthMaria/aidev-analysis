@@ -1,4 +1,4 @@
-"""
+r"""
 quality_analysis.py - Análise da qualidade de código gerado por agentes de IA
 usando o dataset AIDev.
 
@@ -14,17 +14,26 @@ tabelas:
 
 Origem dos dados (variável de ambiente AIDEV_DATA):
   - não definida -> lê direto do Hugging Face (precisa de `huggingface_hub`)
-  - caminho local -> ex.:  set AIDEV_DATA=C:\\Users\\Ruth\\Downloads\\aidev
+  - caminho local -> aponte AIDEV_DATA para a pasta com os .parquet (veja abaixo)
 
-Uso: $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
-     python src/quality_analysis.py
+Uso (PowerShell):
+  $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"   # opcional (dados locais)
+  python src/quality_analysis.py
+
+Uso (Git Bash):
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/quality_analysis.py
 
 Gera tabelas no terminal e gráficos PNG na pasta outputs/.
 """
 
 import os                       # acessa variáveis de ambiente (ex.: AIDEV_DATA)
+import sys                       # usado para forçar a saída do console em UTF-8
 from pathlib import Path        # monta caminhos de forma portável (Windows/Linux)
 import pandas as pd            # biblioteca central: lê os .parquet, faz joins e agrega
+
+# O console do Windows usa cp1252 e quebra com caracteres fora desse conjunto.
+# Forçar UTF-8 evita UnicodeEncodeError ao imprimir (substitui o que não der show).
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # matplotlib só é necessário para os gráficos PNG. Como é opcional, tentamos
 # importar dentro de um try/except: se não estiver instalado, o script ainda

@@ -1,4 +1,4 @@
-"""
+r"""
 explore.py - Primeiro contato com o dataset AIDev.
 
 Mostra, para cada tabela principal, o tamanho, as colunas e algumas linhas.
@@ -6,14 +6,23 @@ Rode primeiro este script para entender o que tem em cada arquivo.
 
 Origem dos dados (variavel de ambiente AIDEV_DATA):
   - nao definida -> le direto do Hugging Face (precisa de `huggingface_hub`)
-  - caminho local -> ex.:  set AIDEV_DATA=C:\\Users\\Ruth\\Downloads\\aidev
+  - caminho local -> aponte AIDEV_DATA para a pasta com os .parquet (veja abaixo)
 
-Uso: $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"  
-     python src/explore.py
+Uso (PowerShell):
+  $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"   # opcional (dados locais)
+  python src/explore.py
+
+Uso (Git Bash):
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/explore.py
 """
 
 import os
+import sys
 import pandas as pd
+
+# O console do Windows usa cp1252 e quebra ao imprimir emojis presentes nos
+# titulos/corpos dos PRs. Forca a saida em UTF-8 (substitui o que nao der show).
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", 160)
@@ -37,18 +46,17 @@ def path(name):
 
 def main():
     print(f"[i] lendo de: {DATA_DIR}\n")
-    for name in TABLES:
+    for index, name in enumerate(TABLES, start=1):
         try:
             df = pd.read_parquet(path(name))
         except FileNotFoundError:
             print(f"[!] nao encontrado: {name}\n")
             continue
-        print("=" * 80)
-        print(f"{name}   ->   {len(df):,} linhas, {len(df.columns)} colunas")
-        print("-" * 80)
-        print("Colunas:", list(df.columns))
-        print("-" * 80)
-        print(df.head(3))
+        print("=" * 160)
+        print(f"{index}º TABELA SELECIONADA \n")
+        print(f"{name}   ->   {len(df):,} linhas, {len(df.columns)} colunas \n")
+        print("COLUNAS:", list(df.columns), "\n")
+        print(df.head(1))
         print()
 
 
