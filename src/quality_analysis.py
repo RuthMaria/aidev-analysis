@@ -173,38 +173,35 @@ def bar_chart(series, title, ylabel, file):
     out = OUTPUT_DIR / file        # caminho final dentro de outputs/
     plt.savefig(out, dpi=120)      # salva o PNG no disco
     plt.close()                    # libera a figura da memória
-    print(f"   -> grafico salvo em {out}")
+    print(f"\n-> grafico salvo em {out}")
 
 
 def main():
     print(f"[i] lendo de: {DATA_DIR}")   # mostra a origem dos dados (local ou HF)
 
     # ---- RQ1: carrega TODOS os PRs de agentes e mede aceitação/rejeição ----
-    print("\n### Carregando PRs de agentes (all_pull_request) ...")
     agents = load_prs("all_pull_request.parquet")
 
-    print("\n========== 1+2. ACEITACAO / REJEICAO POR AGENTE ==========")
+    print("\n========================= RQ1. ACEITACAO / REJEICAO POR AGENTE =========================\n")
     tab_acc = acceptance_by_agent(agents)
     print(tab_acc)                        # imprime a tabela no terminal
     bar_chart(tab_acc["merge_rate"],      # e salva o gráfico de taxa de merge
               "Taxa de merge por agente (%)", "% mesclado",
               "q_taxa_merge.png")
 
+    print("\n\n========================= RQ3. AGENTES vs HUMANOS (taxa de merge) =========================\n")
     # ---- RQ3: adiciona o baseline humano e compara na mesma métrica ----
-    print("\n### Carregando baseline humano (human_pull_request) ...")
     humans = load_prs("human_pull_request.parquet", agent_label="Human")
     # concat empilha os dois DataFrames; ignore_index renumera as linhas.
     combined = pd.concat([agents, humans], ignore_index=True)
 
-    print("\n========== 4. AGENTES vs HUMANOS (taxa de merge) ==========")
     # Reaproveita a mesma função de RQ1, agora com 'Human' incluso.
     print(acceptance_by_agent(combined)[["n_prs", "merge_rate"]])
 
     # ---- RQ2: esforço de revisão (só existe no subset AIDev-pop) ----
-    print("\n### Esforco de revisao (subset AIDev-pop) ...")
     try:
         pop = load_prs("pull_request.parquet")  # PRs de repos populares
-        print("\n========== 3. ESFORCO DE REVISAO POR AGENTE ==========")
+        print("\n\n========================= RQ2. ESFORCO DE REVISAO POR AGENTE =========================\n")
         tab_review = review_effort(pop)
         print(tab_review)
         bar_chart(tab_review["mean_changes_requested"],
@@ -215,7 +212,7 @@ def main():
         print(f"[!] pulei esforco de revisao: {e}")
 
     # ---- RQ4: taxa de merge controlada por tipo de tarefa ----
-    print("\n========== 5. TAXA DE MERGE POR TIPO DE TAREFA (%) ==========")
+    print("\n========================= RQ4. TAXA DE MERGE POR TIPO DE TAREFA (%) =========================\n")
     try:
         print(acceptance_by_type(agents))
     except FileNotFoundError as e:
