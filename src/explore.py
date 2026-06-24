@@ -8,7 +8,8 @@ Origem dos dados (variavel de ambiente AIDEV_DATA):
   - nao definida -> le direto do Hugging Face (precisa de `huggingface_hub`)
   - caminho local -> ex.:  set AIDEV_DATA=C:\\Users\\Ruth\\Downloads\\aidev
 
-Uso:  python explore.py
+Uso: $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"  
+     python src/explore.py
 """
 
 import os

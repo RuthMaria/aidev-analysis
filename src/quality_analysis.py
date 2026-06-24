@@ -16,12 +16,15 @@ Origem dos dados (variável de ambiente AIDEV_DATA):
   - não definida -> lê direto do Hugging Face (precisa de `huggingface_hub`)
   - caminho local -> ex.:  set AIDEV_DATA=C:\\Users\\Ruth\\Downloads\\aidev
 
-Uso:  python quality_analysis.py
-Gera tabelas no terminal e gráficos PNG na pasta atual.
+Uso: $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
+     python src/quality_analysis.py
+
+Gera tabelas no terminal e gráficos PNG na pasta outputs/.
 """
 
-import os                # acessa variáveis de ambiente (ex.: AIDEV_DATA)
-import pandas as pd       # biblioteca central: lê os .parquet, faz joins e agrega
+import os                       # acessa variáveis de ambiente (ex.: AIDEV_DATA)
+from pathlib import Path        # monta caminhos de forma portável (Windows/Linux)
+import pandas as pd            # biblioteca central: lê os .parquet, faz joins e agrega
 
 # matplotlib só é necessário para os gráficos PNG. Como é opcional, tentamos
 # importar dentro de um try/except: se não estiver instalado, o script ainda
@@ -43,6 +46,11 @@ pd.set_option("display.width", 160)         # largura maior antes de quebrar lin
 # De onde ler os dados. Se a variável de ambiente AIDEV_DATA existir, usa o
 # caminho local apontado por ela; senão, lê direto do Hugging Face via hf://.
 DATA_DIR = os.environ.get("AIDEV_DATA", "hf://datasets/hao-li/AIDev")
+
+# Pasta onde os gráficos PNG são salvos: <raiz-do-projeto>/outputs.
+# Path(__file__) é este arquivo; .parent.parent sobe de src/ para a raiz.
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
+OUTPUT_DIR.mkdir(exist_ok=True)             # cria a pasta se ainda não existir
 
 
 def path(name):
@@ -153,9 +161,10 @@ def bar_chart(series, title, ylabel, file):
     ax.set_xlabel("")              # sem rótulo no eixo X (os nomes já aparecem)
     plt.xticks(rotation=30, ha="right")  # inclina os rótulos para não sobrepor
     plt.tight_layout()             # ajusta margens para nada ficar cortado
-    plt.savefig(file, dpi=120)     # salva o PNG no disco
+    out = OUTPUT_DIR / file        # caminho final dentro de outputs/
+    plt.savefig(out, dpi=120)      # salva o PNG no disco
     plt.close()                    # libera a figura da memória
-    print(f"   -> grafico salvo em {file}")
+    print(f"   -> grafico salvo em {out}")
 
 
 def main():

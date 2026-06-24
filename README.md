@@ -18,18 +18,31 @@ O dataset não tem uma coluna "qualidade"; ela é estimada por **proxies**:
 | Comparação com humanos | baseline para todas as métricas |
 | Tipo de tarefa (`feat`/`fix`/`docs`) | controle para comparações justas |
 
-## Scripts
+## Estrutura do projeto
 
-- **`explore.py`** — mostra colunas e amostras de cada tabela.
-- **`quality_analysis.py`** — calcula as métricas acima e gera gráficos PNG.
+```
+aidev-analysis/
+├── src/                       # código-fonte
+│   ├── explore.py             # mostra colunas e amostras de cada tabela
+│   └── quality_analysis.py    # calcula as métricas e gera os gráficos
+├── docs/                      # documentação
+│   └── guia_de_pesquisa.html  # guia de pesquisa (contexto, RQs, resultados)
+├── outputs/                   # gráficos PNG gerados pelos scripts
+├── requirements.txt           # dependências Python
+└── README.md
+```
 
 ## Como rodar
 
+A partir da raiz do projeto:
+
 ```bash
-pip install pandas pyarrow matplotlib huggingface_hub
-python explore.py
-python quality_analysis.py
+pip install -r requirements.txt
+python src/explore.py
+python src/quality_analysis.py
 ```
+
+Os gráficos são salvos em `outputs/`.
 
 ### Origem dos dados
 
@@ -39,7 +52,7 @@ Se você já tem os `.parquet` baixados localmente, aponte para a pasta:
 ```bash
 # Windows (PowerShell)
 $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
-python quality_analysis.py
+python src/quality_analysis.py
 ```
 
 ## Créditos
