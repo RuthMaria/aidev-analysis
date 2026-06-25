@@ -180,13 +180,20 @@ estilo) do que o esperado? Como isso varia por agente? Enquanto RQ1–RQ4 medem 
 qualidade <em>percebida</em> (aceitação/revisão), a RQ5 olha o <strong>próprio
 código</strong>, fechando a lacuna que a literatura aponta em estudos baseados só
 em taxa de merge.</p>
+<p><span class="rq">RQ6</span> <strong>Qualidade dinâmica (testes).</strong> O código
+que os agentes adicionam é <em>bem testado</em>? Medimos a <strong>cobertura</strong>
+das linhas adicionadas e o <strong>mutation score</strong> dos arquivos modificados.
+Se a RQ5 é a análise <em>estática</em> (sem executar), a RQ6 é a <em>dinâmica</em>
+(executando a suíte) — e a mutação revela algo que a cobertura sozinha esconde:
+se os testes realmente <em>pegam bugs</em>, não só se passam pelo código.</p>
 <div class="box alerta">
-  <h4>RQ5 é uma extensão exploratória</h4>
-  As RQs 1–4 refletem o que o dataset responde com alta confiança. A RQ5 é mais
-  exploratória: depende dos <em>patches</em> de <code>pr_commit_details</code>, que
-  têm cobertura parcial (a API do GitHub omite diffs grandes — ver §7). Os
-  resultados de RQ5 abaixo são <strong>preliminares</strong>, sobre uma amostra de
-  arquivos Python, e servem de prova de conceito para o método.
+  <h4>RQ5 e RQ6 são extensões exploratórias</h4>
+  As RQs 1–4 refletem o que o dataset responde com alta confiança. A RQ5 (estática)
+  e a RQ6 (dinâmica) são mais exploratórias: dependem dos <em>patches</em> de
+  <code>pr_commit_details</code>, de cobertura parcial (a API do GitHub omite diffs
+  grandes — ver §7). A RQ5 roda sobre uma amostra de arquivos Python; a RQ6 exige
+  <em>executar</em> a suíte e por isso roda sobre uma amostra ainda menor de repos
+  reconstruídos. Ambas são <strong>prova de conceito</strong> do método.
 </div>
 </section>
 
@@ -240,11 +247,12 @@ por chaves consistentes (<code>id</code>/<code>pr_id</code>, <code>repo_id</code
   <tbody>
     <tr><td><code>all_pull_request</code></td><td>Todos os PRs: título, corpo, agente, estado, datas de criação/fechamento/merge</td><td>RQ1, RQ4</td></tr>
     <tr><td><code>human_pull_request</code></td><td>PRs autorados por humanos (baseline)</td><td>RQ3</td></tr>
-    <tr><td><code>pull_request</code></td><td>PRs do subset AIDev-pop (repos populares)</td><td>RQ2</td></tr>
+    <tr><td><code>pull_request</code></td><td>PRs do subset AIDev-pop (repos populares)</td><td>RQ2, RQ6</td></tr>
     <tr><td><code>pr_reviews</code></td><td>Revisões formais (<code>APPROVED</code>, <code>CHANGES_REQUESTED</code>…)</td><td>RQ2</td></tr>
     <tr><td><code>pr_review_comments_v2</code></td><td>Comentários inline nas revisões</td><td>RQ2</td></tr>
     <tr><td><code>pr_task_type</code></td><td>Classificação da tarefa via LLM (estilo Conventional Commits)</td><td>RQ4</td></tr>
-    <tr><td><code>pr_commit_details</code></td><td>Diffs/patches por arquivo, linhas adicionadas/removidas</td><td>RQ5</td></tr>
+    <tr><td><code>pr_commit_details</code></td><td>Diffs/patches por arquivo, linhas adicionadas/removidas</td><td>RQ5, RQ6</td></tr>
+    <tr><td><code>pr_timeline</code></td><td>Eventos do PR (commits, merge, deploy…); o último <code>committed</code> dá o <code>head_sha</code></td><td>RQ6</td></tr>
   </tbody>
 </table>
 </section>
@@ -272,6 +280,8 @@ contribuição que se correlacionam com qualidade.
     <tr><td>Comentários de revisão</td><td>média de comentários inline por PR</td><td>volume de problemas apontados</td></tr>
     <tr><td>Densidade de warnings (RQ5)</td><td>avisos de lint (<code>ruff</code>) por 100 linhas adicionadas</td><td>problemas estáticos no próprio código</td></tr>
     <tr><td>Complexidade (RQ5)</td><td>complexidade ciclomática média (<code>lizard</code>)</td><td>quão intricado é o código</td></tr>
+    <tr><td>Cobertura (RQ6)</td><td>% das linhas adicionadas exercitadas pela suíte (<code>pytest-cov</code>)</td><td>o código do agente é testado?</td></tr>
+    <tr><td>Mutation score (RQ6)</td><td>% de mutantes mortos nos arquivos do agente (<code>mutmut</code>)</td><td>os testes são <em>eficazes</em> (pegam bugs)?</td></tr>
   </tbody>
 </table>
 <div class="box">
@@ -466,15 +476,106 @@ arquivo medimos a densidade de <em>warnings</em> de lint (<code>ruff</code>, reg
   arquivos novos (completos).
 </div>
 
+<h3>6.6 <span class="rq">RQ6</span> O código dos agentes é bem testado? — cobertura e mutação (metodologia)</h3>
+<p>
+A RQ5 mede qualidade <strong>sem executar</strong> o código (análise estática). A
+RQ6 acrescenta a dimensão <strong>dinâmica</strong>: executa a suíte de testes do
+projeto e pergunta <em>quão bem-testado</em> é o código que o agente adicionou.
+Usamos duas técnicas clássicas de teste de software:
+</p>
+<table>
+  <thead><tr><th>Técnica</th><th>O que mede</th><th>Ferramenta</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Cobertura</strong> de linha/ramo</td><td>quanto das <em>linhas adicionadas</em> pelo agente é de fato exercitado pela suíte (<em>patch coverage</em>)</td><td><code>pytest-cov</code></td></tr>
+    <tr><td><strong>Teste de mutação</strong></td><td>injeta defeitos (mutantes) no código do agente e mede quantos a suíte <em>mata</em> (<em>mutation score</em>)</td><td><code>mutmut</code></td></tr>
+  </tbody>
+</table>
+
 <div class="box destaque">
-  <h4>Síntese: três níveis de evidência</h4>
+  <h4>Por que cobertura <em>e</em> mutação? (o ponto central da disciplina de testes)</h4>
+  <strong>Cobertura alta não significa teste eficaz.</strong> Um arquivo pode ter
+  100% de cobertura e <em>mutation score</em> baixo: os testes <em>executam</em> o
+  código, mas não <em>verificam</em> o resultado (oráculos fracos). A cobertura diz
+  "o teste passou por aqui?"; a mutação diz "o teste <em>pegaria um bug</em> aqui?".
+  Por isso as duas se complementam — e a mutação é a evidência mais forte de que os
+  testes realmente protegem o código.
+</div>
+
+<div class="box">
+  <h4>Por que medir o <em>código</em> do agente (e não os testes dele)?</h4>
+  Havia duas opções: (A) avaliar a qualidade dos <em>testes</em> que o agente
+  escreve, ou (B) avaliar quão bem-testado é o <em>código</em> que o agente escreve.
+  Escolhemos a <strong>(B)</strong> porque ela liga diretamente "testes" ao objeto da
+  tese — a <strong>qualidade do código gerado</strong>. Aplicamos cobertura às linhas
+  que o agente adicionou e mutação aos arquivos que ele modificou.
+</div>
+
+<p>
+<strong>Motivação (medição direta, sobre todo o subset).</strong> Antes da análise
+dinâmica, uma observação barata sobre <code>pr_commit_details</code>: os agentes já
+acompanham o código com testes em proporções bem diferentes — de
+<strong>50% (Claude Code)</strong> e 48,6% (Codex) a <strong>28% (Cursor)</strong>
+dos PRs. Mas <em>presença</em> de teste não garante <em>eficácia</em>: é exatamente
+o que cobertura e mutação vão verificar.
+</p>
+
+<div class="box alerta">
+  <h4>Por que uma amostra curada (e não o dataset inteiro)?</h4>
+  Cobertura e mutação exigem <strong>executar</strong> a suíte em um repositório
+  reconstruído. O AIDev fornece apenas os <em>patches</em>, não os repos montados;
+  clonar, instalar dependências e rodar testes é pesado e <em>instável</em> (cada
+  repo tem seu setup), e a mutação roda a suíte <em>uma vez por mutante</em> (lento).
+  Logo, rodar em 900 mil PRs é inviável. A RQ6 trabalha sobre uma
+  <strong>amostra estratificada por agente</strong> — e a própria curadoria/automação
+  vira parte do método (reprodutibilidade por amostra).
+</div>
+
+<p><strong>Critérios da amostra</strong> (e o porquê de cada um), gerada por
+<code>src/sample_for_testing.py</code>:</p>
+<table>
+  <thead><tr><th>Critério</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr><td>PR <strong>mesclado</strong></td><td>garante que o código do agente realmente entrou no projeto</td></tr>
+    <tr><td>repo <strong>popular</strong> (AIDev-pop)</td><td>repos maduros têm maior chance de ter suíte de testes instalável</td></tr>
+    <tr><td>≥ 1 arquivo <code>.py</code> de <strong>código</strong></td><td>é preciso haver código do agente para cobrir e mutar</td></tr>
+    <tr><td>≥ 1 arquivo <code>.py</code> de <strong>teste</strong></td><td>indício de que existe suíte capaz de exercitar o código</td></tr>
+    <tr><td><code>head_sha</code> conhecido</td><td>permite dar <code>git checkout</code> no estado exato do PR (obtido do último evento <code>committed</code> em <code>pr_timeline</code>)</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Pipeline de execução</strong> (passo 2, <code>src/mutation_coverage.py</code>), por PR amostrado:</p>
+<pre><code>git clone &lt;repo_url&gt; &amp;&amp; git checkout &lt;head_sha&gt;   # reconstrói o estado do PR
+pip install -e .                                    # instala o projeto e suas deps
+pytest --cov --cov-report=xml                       # roda a suíte com cobertura
+# cobertura SÓ das linhas adicionadas pelo agente (patch coverage)
+mutmut run --paths-to-mutate &lt;arquivos_.py_do_diff&gt; # mutação só no código do agente</code></pre>
+<p>
+A mutação é restrita aos <em>arquivos do diff</em> (não ao projeto todo) justamente
+para ser viável — senão o número de mutantes explodiria.
+</p>
+
+<div class="box">
+  <h4>Status e o que será reportado</h4>
+  A amostra já foi gerada (<strong>25 PRs, 5 por agente</strong>, sorteados de
+  <strong>1.267 candidatos</strong>). Os resultados de cobertura e <em>mutation
+  score</em> dependem de rodar o <em>runner</em> (execução pesada, na máquina local).
+  Métricas finais, por agente: <strong>% das linhas adicionadas cobertas</strong> e
+  <strong>mutation score médio</strong> dos arquivos modificados. Espera-se que parte
+  dos repos falhe ao instalar/rodar — a tese reporta sobre o subconjunto que rodou
+  (limitação inerente a estudos dinâmicos de mineração).
+</div>
+
+<div class="box destaque">
+  <h4>Síntese: quatro níveis de evidência</h4>
   Juntando todas as RQs: (1) há uma <strong>hierarquia de aceitação</strong> estável
   (RQ1–RQ3), com Codex e Claude Code no topo, já no nível humano; (2) essa vantagem
-  <strong>encolhe em tarefas complexas</strong> (RQ4), o achado mais robusto; e
-  (3) aceitação <strong>não equivale a qualidade de código</strong> (RQ5). A
-  mensagem para mantenedores e para a tese é a mesma: confiar em contribuições de
-  agentes exige olhar além da taxa de merge — controlando o tipo de tarefa e
-  inspecionando o próprio código.
+  <strong>encolhe em tarefas complexas</strong> (RQ4), o achado mais robusto;
+  (3) aceitação <strong>não equivale a qualidade estática de código</strong> (RQ5); e
+  (4) a RQ6 fecha o arco indo da qualidade <em>estática</em> à <em>dinâmica</em>
+  (cobertura + mutação) — perguntando não só se o código é limpo, mas se ele está de
+  fato <strong>protegido por testes eficazes</strong>. A mensagem para mantenedores e
+  para a tese: confiar em contribuições de agentes exige olhar além da taxa de
+  merge — controlando o tipo de tarefa, inspecionando o código e testando-o.
 </div>
 </section>
 
@@ -544,6 +645,13 @@ em volta.
       amostra) e adicionar análise de segurança (<code>bandit</code>/CodeQL) e o
       <em>maintainability rating</em> do SonarQube numa amostra de repos
       reconstruídos, para triangular.</li>
+  <li><strong>Testes dinâmicos</strong> (RQ6 — <em>amostra já selecionada</em>, ver
+      §6.6): rodar o <em>runner</em> (<code>src/mutation_coverage.py</code>) que
+      reconstrói os repos e mede <strong>cobertura</strong> (<code>pytest-cov</code>)
+      e <strong>mutation score</strong> (<code>mutmut</code>) do código dos agentes.
+      Próximos passos: executar o runner na amostra, ampliar o tamanho, e explorar
+      <em>test smells</em> (ex.: testes super-mockados) nos testes que os agentes
+      escrevem.</li>
   <li><strong>Métricas de tamanho e complexidade</strong>: relacionar linhas
       adicionadas/removidas e número de arquivos com a chance de aceitação.</li>
   <li><strong>Tempo de turnaround</strong>: medir <code>merged_at − created_at</code>
@@ -560,7 +668,7 @@ em volta.
 <section id="reprodutibilidade">
 <h2>9. Reprodutibilidade</h2>
 
-<h3>10.1 Stack tecnológica e por que Python</h3>
+<h3>9.1 Stack tecnológica e por que Python</h3>
 <p>
 Toda a análise foi implementada em <strong>Python</strong>. A escolha não é
 arbitrária: ela acompanha o formato dos dados, as ferramentas da comunidade de
@@ -576,6 +684,8 @@ mineração de repositórios (MSR) e as extensões previstas em §8.
     <tr><td><code>ruff</code></td><td>RQ5 — linter rápido (Rust) que conta <em>warnings</em> de estilo/smells sobre os patches.</td></tr>
     <tr><td><code>lizard</code> / <code>radon</code></td><td>RQ5 — complexidade ciclomática e <em>maintainability index</em> do código adicionado.</td></tr>
     <tr><td><code>bandit</code></td><td>RQ5 (futuro) — varredura de padrões inseguros (CWE) em código Python.</td></tr>
+    <tr><td><code>pytest</code> / <code>pytest-cov</code></td><td>RQ6 — executa a suíte de testes do repo e mede a cobertura das linhas adicionadas.</td></tr>
+    <tr><td><code>mutmut</code></td><td>RQ6 — teste de mutação: injeta defeitos no código do agente e mede o <em>mutation score</em>.</td></tr>
   </tbody>
 </table>
 <p>
@@ -605,7 +715,7 @@ ficando reservado a uma validação qualitativa em amostra (§8).
       o pipeline.</li>
 </ul>
 
-<h3>10.2 Como reproduzir</h3>
+<h3>9.2 Como reproduzir</h3>
 <p>Todo o código está versionado em
 <a href="https://github.com/RuthMaria/aidev-analysis">github.com/RuthMaria/aidev-analysis</a>.
 Para reproduzir os resultados:</p>
@@ -619,7 +729,11 @@ python src/explore.py
 python src/quality_analysis.py
 
 # 4. Rodar a análise estática RQ5 (amostra de arquivos Python)
-python src/static_analysis.py</code></pre>
+python src/static_analysis.py
+
+# 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
+python src/sample_for_testing.py            # gera outputs/test_sample.csv
+# (passo seguinte: rodar o runner de cobertura+mutação sobre essa amostra)</code></pre>
 <p>
 Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local dos
 <code>.parquet</code>, defina a variável de ambiente <code>AIDEV_DATA</code>:
@@ -663,6 +777,16 @@ A RQ5 analisa por padrão uma amostra de arquivos <code>.py</code>
       Acceptance.</em> arXiv:2602.08915.</li>
   <li>GitClear. <em>AI Copy/Paste &amp; Code Duplication Trends</em> (relatório
       sobre dívida técnica em código assistido por IA), 2025.</li>
+  <li><em>Rethinking the Value of Agent-Generated Tests for LLM-Based Software
+      Engineering Agents.</em> arXiv:2602.07900.</li>
+  <li><em>Are Coding Agents Generating Over-Mocked Tests? An Empirical Study.</em>
+      arXiv:2602.00409.</li>
+  <li><em>Test vs Mutant: Adversarial LLM Agents for Robust Unit Test
+      Generation.</em> arXiv:2602.08146.</li>
+  <li>Engineering at Meta. <em>LLMs Are the Key to Mutation Testing and Better
+      Compliance.</em> 2025.</li>
+  <li>Jia, Y.; Harman, M. <em>An Analysis and Survey of the Development of Mutation
+      Testing.</em> IEEE TSE, 2011. (fundamento de teste de mutação)</li>
 </ol>
 </section>
 

@@ -3,7 +3,7 @@
 
 # Saidas geradas
 *.png
-
+*.csv
 # Python
 __pycache__/
 *.pyc

@@ -8,3 +8,8 @@ ruff
 radon
 lizard
 bandit
+
+# RQ6 - testes dinâmicos: cobertura + mutação (src/mutation_coverage.py)
+pytest
+pytest-cov
+mutmut
