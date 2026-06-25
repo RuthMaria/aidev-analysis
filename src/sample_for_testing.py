@@ -48,7 +48,7 @@ TEST_RE = re.compile(r"(^|/)(tests?|__tests__)/|(^|/)test_|_test\.py$|_tests\.py
 
 
 def is_python(name):
-    # Verdadeiro só se for string e terminar em .py (cobertura/mutmut são de Python).
+    # Verdadeiro só se for string e terminar em .py (cobertura/mutação são de Python).
     return isinstance(name, str) and name.endswith(".py")
 
 

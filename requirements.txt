@@ -12,4 +12,4 @@ bandit
 # RQ6 - testes dinâmicos: cobertura + mutação (src/mutation_coverage.py)
 pytest
 pytest-cov
-mutmut
+cosmic-ray   # mutação multiplataforma (mutmut não roda nativo no Windows)

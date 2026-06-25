@@ -281,7 +281,7 @@ contribuição que se correlacionam com qualidade.
     <tr><td>Densidade de warnings (RQ5)</td><td>avisos de lint (<code>ruff</code>) por 100 linhas adicionadas</td><td>problemas estáticos no próprio código</td></tr>
     <tr><td>Complexidade (RQ5)</td><td>complexidade ciclomática média (<code>lizard</code>)</td><td>quão intricado é o código</td></tr>
     <tr><td>Cobertura (RQ6)</td><td>% das linhas adicionadas exercitadas pela suíte (<code>pytest-cov</code>)</td><td>o código do agente é testado?</td></tr>
-    <tr><td>Mutation score (RQ6)</td><td>% de mutantes mortos nos arquivos do agente (<code>mutmut</code>)</td><td>os testes são <em>eficazes</em> (pegam bugs)?</td></tr>
+    <tr><td>Mutation score (RQ6)</td><td>% de mutantes mortos nos arquivos do agente (<code>cosmic-ray</code>)</td><td>os testes são <em>eficazes</em> (pegam bugs)?</td></tr>
   </tbody>
 </table>
 <div class="box">
@@ -487,7 +487,7 @@ Usamos duas técnicas clássicas de teste de software:
   <thead><tr><th>Técnica</th><th>O que mede</th><th>Ferramenta</th></tr></thead>
   <tbody>
     <tr><td><strong>Cobertura</strong> de linha/ramo</td><td>quanto das <em>linhas adicionadas</em> pelo agente é de fato exercitado pela suíte (<em>patch coverage</em>)</td><td><code>pytest-cov</code></td></tr>
-    <tr><td><strong>Teste de mutação</strong></td><td>injeta defeitos (mutantes) no código do agente e mede quantos a suíte <em>mata</em> (<em>mutation score</em>)</td><td><code>mutmut</code></td></tr>
+    <tr><td><strong>Teste de mutação</strong></td><td>injeta defeitos (mutantes) no código do agente e mede quantos a suíte <em>mata</em> (<em>mutation score</em>)</td><td><code>cosmic-ray</code></td></tr>
   </tbody>
 </table>
 
@@ -544,21 +544,27 @@ o que cobertura e mutação vão verificar.
 </table>
 
 <p><strong>Pipeline de execução</strong> (passo 2, <code>src/mutation_coverage.py</code>), por PR amostrado:</p>
-<pre><code>git clone &lt;repo_url&gt; &amp;&amp; git checkout &lt;head_sha&gt;   # reconstrói o estado do PR
-pip install -e .                                    # instala o projeto e suas deps
-pytest --cov --cov-report=xml                       # roda a suíte com cobertura
-# cobertura SÓ das linhas adicionadas pelo agente (patch coverage)
-mutmut run --paths-to-mutate &lt;arquivos_.py_do_diff&gt; # mutação só no código do agente</code></pre>
+<pre><code>git fetch --depth 1 origin &lt;head_sha&gt; &amp;&amp; git checkout FETCH_HEAD  # só o commit do PR
+python -m venv .venv &amp;&amp; .venv/python -m pip install -e .         # venv isolado + deps
+pytest --cov --cov-report=json:cov.json                          # suíte + cobertura
+# cobertura SÓ das linhas adicionadas (cruza cov.json com os patches do PR)
+cosmic-ray init cr.toml cr.sqlite &amp;&amp; cosmic-ray exec cr.toml cr.sqlite  # mutação
+cosmic-ray dump cr.sqlite                                        # mortos vs sobreviventes</code></pre>
 <p>
-A mutação é restrita aos <em>arquivos do diff</em> (não ao projeto todo) justamente
-para ser viável — senão o número de mutantes explodiria.
+A mutação usa <code>cosmic-ray</code> (multiplataforma; o <code>mutmut</code> não roda
+nativo no Windows) e é restrita aos <em>arquivos do diff</em> — não ao projeto todo —
+justamente para ser viável, senão o número de mutantes explodiria. Cada PR roda num
+<strong>venv isolado</strong>, e clonamos só o <code>head_sha</code> (não o histórico
+inteiro) para economizar tempo e disco.
 </p>
 
 <div class="box">
   <h4>Status e o que será reportado</h4>
   A amostra já foi gerada (<strong>25 PRs, 5 por agente</strong>, sorteados de
-  <strong>1.267 candidatos</strong>). Os resultados de cobertura e <em>mutation
-  score</em> dependem de rodar o <em>runner</em> (execução pesada, na máquina local).
+  <strong>1.267 candidatos</strong>) e o <em>runner</em>
+  (<code>src/mutation_coverage.py</code>) já está implementado. Falta apenas
+  <em>executá-lo</em> (passo pesado, na máquina local): ele clona, instala, roda a
+  suíte e o cosmic-ray, com tratamento de erro por PR e relatório de status.
   Métricas finais, por agente: <strong>% das linhas adicionadas cobertas</strong> e
   <strong>mutation score médio</strong> dos arquivos modificados. Espera-se que parte
   dos repos falhe ao instalar/rodar — a tese reporta sobre o subconjunto que rodou
@@ -645,13 +651,13 @@ em volta.
       amostra) e adicionar análise de segurança (<code>bandit</code>/CodeQL) e o
       <em>maintainability rating</em> do SonarQube numa amostra de repos
       reconstruídos, para triangular.</li>
-  <li><strong>Testes dinâmicos</strong> (RQ6 — <em>amostra já selecionada</em>, ver
-      §6.6): rodar o <em>runner</em> (<code>src/mutation_coverage.py</code>) que
-      reconstrói os repos e mede <strong>cobertura</strong> (<code>pytest-cov</code>)
-      e <strong>mutation score</strong> (<code>mutmut</code>) do código dos agentes.
-      Próximos passos: executar o runner na amostra, ampliar o tamanho, e explorar
-      <em>test smells</em> (ex.: testes super-mockados) nos testes que os agentes
-      escrevem.</li>
+  <li><strong>Testes dinâmicos</strong> (RQ6 — <em>amostra e runner já
+      implementados</em>, ver §6.6): o <em>runner</em>
+      (<code>src/mutation_coverage.py</code>) reconstrói os repos e mede
+      <strong>cobertura</strong> (<code>pytest-cov</code>) e <strong>mutation
+      score</strong> (<code>cosmic-ray</code>) do código dos agentes. Próximos passos:
+      executar o runner na amostra, ampliar o tamanho, e explorar <em>test smells</em>
+      (ex.: testes super-mockados) nos testes que os agentes escrevem.</li>
   <li><strong>Métricas de tamanho e complexidade</strong>: relacionar linhas
       adicionadas/removidas e número de arquivos com a chance de aceitação.</li>
   <li><strong>Tempo de turnaround</strong>: medir <code>merged_at − created_at</code>
@@ -685,7 +691,7 @@ mineração de repositórios (MSR) e as extensões previstas em §8.
     <tr><td><code>lizard</code> / <code>radon</code></td><td>RQ5 — complexidade ciclomática e <em>maintainability index</em> do código adicionado.</td></tr>
     <tr><td><code>bandit</code></td><td>RQ5 (futuro) — varredura de padrões inseguros (CWE) em código Python.</td></tr>
     <tr><td><code>pytest</code> / <code>pytest-cov</code></td><td>RQ6 — executa a suíte de testes do repo e mede a cobertura das linhas adicionadas.</td></tr>
-    <tr><td><code>mutmut</code></td><td>RQ6 — teste de mutação: injeta defeitos no código do agente e mede o <em>mutation score</em>.</td></tr>
+    <tr><td><code>cosmic-ray</code></td><td>RQ6 — teste de mutação (multiplataforma): injeta defeitos no código do agente e mede o <em>mutation score</em>.</td></tr>
   </tbody>
 </table>
 <p>
@@ -733,7 +739,11 @@ python src/static_analysis.py
 
 # 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
 python src/sample_for_testing.py            # gera outputs/test_sample.csv
-# (passo seguinte: rodar o runner de cobertura+mutação sobre essa amostra)</code></pre>
+
+# 6. RQ6: rodar cobertura + mutação sobre a amostra (PESADO: clona e instala repos)
+python src/mutation_coverage.py             # gera outputs/rq6_results.csv
+#    AIDEV_RUN_LIMIT=3      -> processa só os 3 primeiros PRs (teste rápido)
+#    AIDEV_SKIP_MUTATION=1  -> mede só cobertura (mutação é lenta)</code></pre>
 <p>
 Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local dos
 <code>.parquet</code>, defina a variável de ambiente <code>AIDEV_DATA</code>:
