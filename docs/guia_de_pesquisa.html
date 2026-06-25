@@ -485,8 +485,13 @@ arquivo medimos a densidade de <em>warnings</em> de lint (<code>ruff</code>, reg
 <p>
 A taxa de merge mede <strong>aceitação percebida</strong>, não qualidade intrínseca.
 Projetos diferem em rigor de revisão; alguns podem aceitar PRs de bots quase
-automaticamente. Mitigação: triangular com esforço de revisão e, futuramente, com
-análise estática do código (§8).
+automaticamente. A RQ5 mitiga isso triangulando com <strong>análise estática</strong>
+do próprio código (§6.5) — mas a RQ5 também tem limites de construto: densidade de
+<em>warnings</em> de lint e complexidade ciclomática são sinais de <em>superfície</em>,
+não de corretude; um código pode estar correto e cheio de avisos de estilo, ou
+"limpo" e logicamente errado. Além disso, a regra <code>ALL</code> do
+<code>ruff</code> infla as contagens absolutas, então só a <em>comparação relativa</em>
+entre agentes é válida.
 </p>
 <h3>Validade interna</h3>
 <p>
@@ -495,17 +500,35 @@ composição de tarefas difere entre agentes. Comparações diretas de médias p
 enganar; por isso o controle por tipo de tarefa (RQ4) e, idealmente, testes
 estatísticos e modelos de regressão são recomendados.
 </p>
+<p>
+<strong>PRs em aberto e viés de recência.</strong> A taxa de merge é calculada sobre
+<em>todos</em> os PRs, mas uma fração relevante ainda não foi decidida (RQ1: Cursor e
+Copilot com ~20% em aberto). Como PRs recentes tendem a ficar em aberto, agentes com
+contribuições mais novas têm a aceitação <em>subestimada</em>. Mitigações: tornamos a
+fatia em aberto explícita (RQ1) e, idealmente, restringir a PRs decididos ou modelar
+o tempo até a decisão controlaria esse viés.
+</p>
+<p>
+<strong>Amostragem da RQ5.</strong> A análise estática rodou sobre uma amostra
+aleatória de ~1,8 mil arquivos Python, com poucos do Claude Code (113). A amostra
+pode não representar o todo; rodar no dataset inteiro é trabalho pendente (§8).
+</p>
 <h3>Validade externa</h3>
 <p>
 O dataset cobre até agosto de 2025 e apenas projetos públicos do GitHub. Resultados
 podem não generalizar para código privado/corporativo ou para versões mais novas
-dos agentes.
+dos agentes. A RQ5, em especial, cobre <strong>apenas Python</strong> (linguagem com
+melhor suporte de linter), então seus achados não se estendem automaticamente a
+outras linguagens.
 </p>
 <h3>Validade de conclusão</h3>
 <p>
 A classificação de tipo de tarefa (<code>pr_task_type</code>) foi feita por um LLM e
 pode conter erros. Patches grandes não são fornecidos pela API do GitHub, limitando
-análises baseadas em diff.
+análises baseadas em diff. Na RQ5 isso é agravado porque analisamos apenas as
+<em>linhas adicionadas</em> do diff — um fragmento, não o arquivo completo após o
+merge —, o que pode subestimar ou superestimar problemas que dependem do contexto
+em volta.
 </p>
 </section>
 
