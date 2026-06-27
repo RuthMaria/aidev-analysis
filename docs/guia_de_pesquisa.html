@@ -373,16 +373,34 @@ isolada.
 
 <h3>6.1 <span class="rq">RQ1</span> Aceitação e rejeição por agente</h3>
 <table>
-  <thead><tr><th>Agente</th><th>#PRs</th><th>% mesclado</th><th>% rejeitado</th><th>% em aberto</th></tr></thead>
+  <thead><tr><th>Agente</th><th>#PRs</th><th>% mesclado</th><th>IC95%</th><th>% rejeitado</th><th>% em aberto</th></tr></thead>
   <tbody>
-    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">87,7</td><td class="num">5,8</td><td class="num">6,6</td></tr>
-    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">76,8</td><td class="num">15,4</td><td class="num">7,8</td></tr>
-    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">70,5</td><td class="num">8,0</td><td class="num">21,4</td></tr>
-    <tr><td>Devin</td><td class="num">29.744</td><td class="num">64,4</td><td class="num">29,9</td><td class="num">5,6</td></tr>
-    <tr><td>Copilot</td><td class="num">50.447</td><td class="num">59,1</td><td class="num">20,7</td><td class="num">20,3</td></tr>
+    <tr><td>OpenAI Codex</td><td class="num">814.522</td><td class="num">87,7</td><td class="num">[87,6; 87,8]</td><td class="num">5,8</td><td class="num">6,6</td></tr>
+    <tr><td>Claude Code</td><td class="num">5.137</td><td class="num">76,8</td><td class="num">[75,6; 77,9]</td><td class="num">15,4</td><td class="num">7,8</td></tr>
+    <tr><td>Cursor</td><td class="num">32.941</td><td class="num">70,5</td><td class="num">[70,0; 71,0]</td><td class="num">8,0</td><td class="num">21,4</td></tr>
+    <tr><td>Devin</td><td class="num">29.744</td><td class="num">64,4</td><td class="num">[63,9; 64,9]</td><td class="num">29,9</td><td class="num">5,6</td></tr>
+    <tr><td>Copilot</td><td class="num">50.447</td><td class="num">59,1</td><td class="num">[58,7; 59,5]</td><td class="num">20,7</td><td class="num">20,3</td></tr>
   </tbody>
 </table>
-<p>As três taxas somam ~100%: todo PR está mesclado, rejeitado <em>ou</em> em aberto.</p>
+<p>As três taxas somam ~100%: todo PR está mesclado, rejeitado <em>ou</em> em aberto.
+A coluna <strong>IC95%</strong> traz o intervalo de confiança de Wilson da taxa de
+merge: note que a faixa do Codex é estreitíssima (±0,1 pp, n=814k) e a do Claude Code
+é ~16× mais larga (±1,2 pp, n=5k) — a mesma diferença de aceitação carrega
+<em>incertezas</em> bem diferentes (ver §7).</p>
+<div class="box">
+  <h4>O que é o intervalo de confiança de Wilson?</h4>
+  Uma taxa medida numa amostra não é a "verdade": se o Claude Code abrisse outros
+  5 mil PRs, sua aceitação daria <em>parecida</em>, não idêntica. O <strong>intervalo
+  de confiança de 95%</strong> dá a faixa em que a taxa verdadeira provavelmente está;
+  quanto <strong>maior o n</strong>, mais estreita a faixa (mais certeza). Usamos a
+  fórmula de <strong>Wilson</strong> em vez da aproximação "normal" (<code>p ± z·√(p(1-p)/n)</code>)
+  porque esta última falha justamente nos nossos casos: <em>n</em> pequeno (Claude Code,
+  ~5k) e taxas próximas de 100% (Codex, 87,7%), onde chega a gerar limites acima de
+  100%. O intervalo de Wilson permanece válido nesses extremos e nunca sai de [0; 100].
+  Como as faixas dos agentes <strong>não se sobrepõem</strong>, o <em>ranking</em> de
+  aceitação é estatisticamente sólido — não é ruído amostral —, ainda que a incerteza
+  do Claude Code seja maior que a do Codex.
+</div>
 <p>Taxa de merge (quanto maior, melhor a aceitação):</p>
 <div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
 <div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:76.8%">76,8%</div></div></div>

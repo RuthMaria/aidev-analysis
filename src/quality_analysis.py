@@ -85,21 +85,55 @@ def load_prs(name, agent_label=None):
 
 
 # ---------------------------------------------------------------------------
+# Intervalo de confiança de Wilson para uma proporção
+# ---------------------------------------------------------------------------
+def wilson_interval(successes, n, z=1.96):
+    """Intervalo de confiança de Wilson (95% por padrão) para uma proporção.
+
+    Por que Wilson e não a fórmula "normal" (p ± z·sqrt(p(1-p)/n))? Porque os
+    volumes por agente são MUITO desiguais (ver §7): com n enorme (Codex, 814k) o
+    intervalo é estreitíssimo; com n pequeno (Claude Code, ~5k) ele é largo. O
+    intervalo de Wilson permanece válido mesmo com n pequeno ou p perto de 0/1,
+    onde a aproximação normal falha. Recebe o nº de sucessos (PRs mesclados) e o
+    total n; devolve (limite_inferior, limite_superior) como proporções (0..1).
+    """
+    if n == 0:                              # sem PRs não há intervalo a calcular
+        return float("nan"), float("nan")
+    p = successes / n                       # proporção observada (taxa de merge)
+    denom = 1 + z**2 / n                    # denominador comum da fórmula de Wilson
+    center = (p + z**2 / (2 * n)) / denom   # centro do intervalo (ajustado)
+    # Margem (meia-largura) do intervalo; usa **0.5 para a raiz quadrada.
+    margin = (z / denom) * (p * (1 - p) / n + z**2 / (4 * n**2)) ** 0.5
+    return center - margin, center + margin  # (inferior, superior) em proporção
+
+
+# ---------------------------------------------------------------------------
 # 1 + 2. Aceitação / rejeição por agente
 # ---------------------------------------------------------------------------
 def acceptance_by_agent(df):
     # Agrupa por agente e calcula três métricas por grupo (RQ1):
     g = df.groupby("agent").agg(
         n_prs=("id", "size"),              # quantos PRs cada agente tem (contagem)
+        n_merged=("merged", "sum"),        # nº de PRs mesclados (sucessos p/ o IC)
         merge_rate=("merged", "mean"),     # média de True/False = proporção mesclada
         rejection_rate=("rejected", "mean"),# média de True/False = proporção rejeitada
         open_rate=("open", "mean"),        # proporção ainda em aberto (sem decisão)
     )
+    # Intervalo de confiança de Wilson (95%) da taxa de merge, por agente. Torna
+    # explícita a INCERTEZA desigual entre agentes com volumes muito diferentes
+    # (§7): a banda é estreita para o Codex (n enorme) e larga para o Claude Code.
+    ci = g.apply(lambda r: wilson_interval(r["n_merged"], r["n_prs"]), axis=1)
+    g["merge_ci_low"] = (ci.str[0] * 100).round(1)   # limite inferior do IC (%)
+    g["merge_ci_high"] = (ci.str[1] * 100).round(1)  # limite superior do IC (%)
     # Converte as proporções (0..1) para percentual (0..100) e arredonda a 1 casa.
     # As três taxas somam ~100% (mesclado + rejeitado + em aberto).
     g["merge_rate"] = (g["merge_rate"] * 100).round(1)
     g["rejection_rate"] = (g["rejection_rate"] * 100).round(1)
     g["open_rate"] = (g["open_rate"] * 100).round(1)
+    # Remove a coluna auxiliar (n_merged) e reordena para o IC ficar ao lado da
+    # taxa de merge — assim cada % vem acompanhada da sua faixa de incerteza.
+    g = g[["n_prs", "merge_rate", "merge_ci_low", "merge_ci_high",
+           "rejection_rate", "open_rate"]]
     # Ordena do agente mais aceito para o menos aceito.
     return g.sort_values("merge_rate", ascending=False)
 
@@ -187,6 +221,8 @@ def bar_chart(series, title, ylabel, file):
 PT_LABELS = {
     "n_prs": "#PRs",
     "merge_rate": "% mesclado",
+    "merge_ci_low": "IC95% inf.",
+    "merge_ci_high": "IC95% sup.",
     "rejection_rate": "% rejeitado",
     "open_rate": "% em aberto",
     "mean_reviews": "Média revisões/PR",
