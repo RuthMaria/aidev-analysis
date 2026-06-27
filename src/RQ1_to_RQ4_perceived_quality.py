@@ -1,5 +1,5 @@
 r"""
-RQ1_to_RQ4_quality_analysis.py - Análise da qualidade de código gerado por agentes
+RQ1_to_RQ4_perceived_quality.py - Análise da qualidade de código gerado por agentes
 de IA usando o dataset AIDev (RQ1 a RQ4).
 
 O dataset NAO tem uma coluna "qualidade". Aqui usamos PROXIES extraídos das
@@ -18,10 +18,10 @@ Origem dos dados (variável de ambiente AIDEV_DATA):
 
 Uso (PowerShell):
   $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"   # opcional (dados locais)
-  python src/RQ1_to_RQ4_quality_analysis.py
+  python src/RQ1_to_RQ4_perceived_quality.py
 
 Uso (Git Bash):
-  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ1_to_RQ4_quality_analysis.py
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ1_to_RQ4_perceived_quality.py
 
 Gera tabelas no terminal e gráficos PNG na pasta outputs/.
 """

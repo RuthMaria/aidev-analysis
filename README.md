@@ -26,7 +26,7 @@ O dataset não tem uma coluna "qualidade"; ela é estimada por **proxies**:
 aidev-analysis/
 ├── src/                       # código-fonte
 │   ├── explore.py             # mostra colunas e amostras de cada tabela
-│   ├── RQ1_to_RQ4_quality_analysis.py  # RQ1-RQ4: aceitação, revisão, tipo de tarefa
+│   ├── RQ1_to_RQ4_perceived_quality.py  # RQ1-RQ4: aceitação, revisão, tipo de tarefa
 │   └── static_analysis.py     # RQ5: análise estática dos patches (ruff/lizard)
 ├── docs/                      # documentação
 │   └── guia_de_pesquisa.html  # guia de pesquisa (contexto, RQs, resultados)
@@ -42,7 +42,7 @@ A partir da raiz do projeto:
 ```bash
 pip install -r requirements.txt
 python src/explore.py
-python src/RQ1_to_RQ4_quality_analysis.py   # RQ1-RQ4
+python src/RQ1_to_RQ4_perceived_quality.py   # RQ1-RQ4
 python src/static_analysis.py    # RQ5 (análise estática)
 ```
 
@@ -58,7 +58,7 @@ Se você já tem os `.parquet` baixados localmente, aponte para a pasta:
 ```bash
 # Windows (PowerShell)
 $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
-python src/RQ1_to_RQ4_quality_analysis.py
+python src/RQ1_to_RQ4_perceived_quality.py
 ```
 
 ## Créditos
