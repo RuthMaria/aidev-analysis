@@ -90,9 +90,12 @@ def run_ruff(fragments):
 
         # Uma única chamada ao ruff, saída em JSON. O ruff retorna código != 0
         # quando encontra problemas; por isso não usamos check=True.
+        # Ignoramos o INP001 ("implicit namespace package"): ele é disparado para
+        # TODO fragmento só porque gravamos cada um como .py solto num diretório
+        # sem __init__.py — é artefato do nosso método, não do código do agente.
         proc = subprocess.run(
             ["ruff", "check", "--no-cache", "--output-format=json",
-             "--select=ALL", str(tmp)],
+             "--select=ALL", "--ignore=INP001", str(tmp)],
             capture_output=True, text=True,
             encoding="utf-8", errors="replace",   # ruff emite UTF-8; evita cp1252
         )
@@ -108,8 +111,11 @@ def run_ruff(fragments):
             if not stem.isdigit():
                 continue
             i = int(stem)
-            # No ruff, erro de sintaxe vem sem 'code' (code == None).
-            if it.get("code") is None:
+            code = it.get("code")
+            # Erro de sintaxe: versões atuais do ruff usam code == "invalid-syntax";
+            # versões antigas vinham sem code (None). Tratamos os dois e NÃO contamos
+            # como warning (senão a densidade de lint ficaria inflada por sintaxe).
+            if code == "invalid-syntax" or code is None:
                 result[i]["syntax_error"] = True
             else:
                 result[i]["n_warnings"] += 1
