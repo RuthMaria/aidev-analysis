@@ -31,7 +31,7 @@ import sys                     # usado para forçar a saída do console em UTF-8
 import pandas as pd           # leitura dos .parquet e agregações
 
 # Reaproveita o caminho dos dados e a pasta de saída já definidos na RQ1-RQ4.
-from quality_analysis import path, OUTPUT_DIR
+from RQ1_a_RQ4_quality_analysis import path, OUTPUT_DIR
 
 # Console do Windows usa cp1252; força UTF-8 para não quebrar com acentos/emojis.
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")

@@ -1,6 +1,6 @@
 r"""
-quality_analysis.py - Análise da qualidade de código gerado por agentes de IA
-usando o dataset AIDev.
+RQ1_a_RQ4_quality_analysis.py - Análise da qualidade de código gerado por agentes
+de IA usando o dataset AIDev (RQ1 a RQ4).
 
 O dataset NAO tem uma coluna "qualidade". Aqui usamos PROXIES extraídos das
 tabelas:
@@ -18,10 +18,10 @@ Origem dos dados (variável de ambiente AIDEV_DATA):
 
 Uso (PowerShell):
   $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"   # opcional (dados locais)
-  python src/quality_analysis.py
+  python src/RQ1_a_RQ4_quality_analysis.py
 
 Uso (Git Bash):
-  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/quality_analysis.py
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ1_a_RQ4_quality_analysis.py
 
 Gera tabelas no terminal e gráficos PNG na pasta outputs/.
 """
@@ -291,7 +291,7 @@ def main():
     # ---- RQ3: taxa de merge por agente e tipo de tarefa (feat/fix/docs...) ----
     print("\n\n============================= RQ3. TAXA DE MERGE POR TIPO DE TAREFA (%) =============================\n")
     try:
-        tab_type = acceptance_by_type(agents)         # tabela agente x tipo de tarefa
+        tab_type = acceptance_by_type(agents)         # calcula taxa de merge por agente e tipo de tarefa
         print(to_portuguese(tab_type, columns_name="tipo"))
         grouped_bar_chart(tab_type,                   # barras agrupadas por agente
                           "Taxa de merge por tipo de tarefa (%)",
