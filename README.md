@@ -27,7 +27,7 @@ aidev-analysis/
 ├── src/                       # código-fonte
 │   ├── explore.py             # mostra colunas e amostras de cada tabela
 │   ├── RQ1_to_RQ4_perceived_quality.py  # RQ1-RQ4: aceitação, revisão, tipo de tarefa
-│   └── static_analysis.py     # RQ5: análise estática dos patches (ruff/lizard)
+│   └── RQ5_static_quality.py  # RQ5: análise estática dos patches (ruff/lizard)
 ├── docs/                      # documentação
 │   └── guia_de_pesquisa.html  # guia de pesquisa (contexto, RQs, resultados)
 ├── outputs/                   # gráficos PNG gerados pelos scripts
@@ -43,7 +43,7 @@ A partir da raiz do projeto:
 pip install -r requirements.txt
 python src/explore.py
 python src/RQ1_to_RQ4_perceived_quality.py   # RQ1-RQ4
-python src/static_analysis.py    # RQ5 (análise estática)
+python src/RQ5_static_quality.py    # RQ5 (análise estática)
 ```
 
 Os gráficos são salvos em `outputs/`. A RQ5 analisa por padrão uma amostra de

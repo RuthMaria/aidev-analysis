@@ -332,7 +332,7 @@ contribuição que se correlacionam com qualidade.
   <li>Para o esforço de revisão, ligar revisões e comentários ao PR via <code>pr_id</code>
       / <code>pull_request_review_id</code>.</li>
 </ol>
-<p><strong>RQ5 — qualidade estática</strong> (<code>static_analysis.py</code>):</p>
+<p><strong>RQ5 — qualidade estática</strong> (<code>RQ5_static_quality.py</code>):</p>
 <ol start="6">
   <li>Extrair as linhas adicionadas (diffs/patches) de cada PR mesclado.</li>
   <li>Rodar o <em>linter</em> <code>ruff</code> (<code>--select=ALL</code>) sobre os fragmentos e
@@ -352,7 +352,7 @@ contribuição que se correlacionam com qualidade.
 </ol>
 <p>
 A análise é reproduzível pelos scripts <code>RQ1_to_RQ4_perceived_quality.py</code> (RQ1–RQ4),
-<code>static_analysis.py</code> (RQ5) e <code>sample_for_testing.py</code> +
+<code>RQ5_static_quality.py</code> (RQ5) e <code>sample_for_testing.py</code> +
 <code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
 <code>pandas</code>.
 </p>
@@ -903,7 +903,7 @@ python src/explore.py
 python src/RQ1_to_RQ4_perceived_quality.py
 
 # 4. Rodar a análise estática RQ5 (amostra de arquivos Python)
-python src/static_analysis.py
+python src/RQ5_static_quality.py
 
 # 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
 python src/sample_for_testing.py            # gera outputs/test_sample.csv

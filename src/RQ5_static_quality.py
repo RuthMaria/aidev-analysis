@@ -1,5 +1,5 @@
 r"""
-static_analysis.py - RQ5: qualidade estática intrínseca do código dos agentes.
+RQ5_static_quality.py - RQ5: qualidade estática intrínseca do código dos agentes.
 
 Diferente das RQ1-RQ4 (que medem ACEITAÇÃO/esforço de revisão), aqui olhamos
 o PRÓPRIO código submetido, rodando ferramentas de análise estática sobre os
@@ -18,10 +18,10 @@ Começamos por Python (.py), a linguagem com melhor suporte de linter.
 
 Uso (PowerShell):
   $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"   # opcional (dados locais)
-  python src/static_analysis.py
+  python src/RQ5_static_quality.py
 
 Uso (Git Bash):
-  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/static_analysis.py
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ5_static_quality.py
 
 A amostra é limitada por padrão (AIDEV_RQ5_SAMPLE arquivos .py) para a análise
 ser rápida. Defina AIDEV_RQ5_SAMPLE=0 para rodar no dataset inteiro.

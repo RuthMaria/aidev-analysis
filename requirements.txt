@@ -3,7 +3,7 @@ pyarrow
 matplotlib
 huggingface_hub
 
-# RQ5 - análise estática (src/static_analysis.py)
+# RQ5 - análise estática (src/RQ5_static_quality.py)
 ruff
 radon
 lizard
