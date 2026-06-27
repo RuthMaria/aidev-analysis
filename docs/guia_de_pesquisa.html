@@ -590,6 +590,17 @@ por 100 linhas adicionadas e a complexidade ciclomática média (<code>lizard</c
   mais completas/autocontidas. (Uma versão anterior mostrava "100%" por um <em>bug</em>
   na detecção de sintaxe do <code>ruff</code>, já corrigido.)
 </div>
+<div class="box alerta">
+  <h4>Cuidado: "% compila" não mede corretude</h4>
+  Um valor baixo <strong>não</strong> significa que o código do agente é quebrado.
+  Ele mede o quão <em>autocontido</em> é o trecho adicionado: se o agente insere 3
+  linhas <em>dentro</em> de uma função já existente, o diff captura só essas linhas
+  soltas (sem o <code>def</code>, sem o contexto) — elas não compilam isoladamente,
+  mas o código real no repositório está correto. Por isso a "% compila" reflete
+  sobretudo o <strong>estilo de contribuição</strong> (arquivos/funções inteiras vs.
+  edições pontuais), e não a qualidade do código. Ela serve aqui apenas para definir
+  sobre quais fragmentos é seguro calcular lint e complexidade.
+</div>
 <div class="box">
   <h4>Como ler estes números (ressalvas)</h4>
   (a) só Python; (b) analisamos as <em>linhas adicionadas</em> do diff, não o arquivo
