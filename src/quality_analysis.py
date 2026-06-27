@@ -194,7 +194,7 @@ def acceptance_by_type(df_pr):
     types = pd.read_parquet(path("pr_task_type.parquet"))[["id", "type"]]
     # inner join: mantém apenas PRs que têm tipo classificado.
     m = df_pr.merge(types, on="id", how="inner")
-    # Para cada combinação (agente, tipo), calcula a taxa de merge em % (RQ4).
+    # Para cada combinação (agente, tipo), calcula a taxa de merge em % (RQ3).
     tab = m.groupby(["agent", "type"])["merged"].mean().mul(100).round(1)
     # unstack vira os 'type' em colunas -> tabela agente (linhas) x tipo (colunas).
     return tab.unstack(fill_value=float("nan"))
@@ -209,6 +209,30 @@ def bar_chart(series, title, ylabel, file):
     ax.set_ylabel(ylabel)          # rótulo do eixo Y
     ax.set_xlabel("")              # sem rótulo no eixo X (os nomes já aparecem)
     plt.xticks(rotation=30, ha="right")  # inclina os rótulos para não sobrepor
+    plt.tight_layout()             # ajusta margens para nada ficar cortado
+    out = OUTPUT_DIR / file        # caminho final dentro de outputs/
+    plt.savefig(out, dpi=120)      # salva o PNG no disco
+    plt.close()                    # libera a figura da memória
+    print(f"\n-> gráfico salvo em {out}")
+
+
+def grouped_bar_chart(table, title, ylabel, file):
+    """Gráfico de barras AGRUPADAS para uma tabela 2D (linhas x colunas).
+
+    Usado na RQ3: cada linha é um agente e cada coluna um tipo de tarefa
+    (feat/fix/docs...). Desenha um grupo de barras por agente, uma barra por tipo,
+    deixando visível como a aceitação cai nas tarefas que mexem na lógica.
+    """
+    if not HAS_PLOT:               # sem matplotlib, não há o que desenhar
+        return
+    # DataFrame.plot(kind="bar") já agrupa por linha (índice) e cria uma barra
+    # por coluna; figsize maior para caber a legenda dos tipos de tarefa.
+    ax = table.plot(kind="bar", figsize=(10, 6), colormap="viridis")
+    ax.set_title(title)            # título do gráfico
+    ax.set_ylabel(ylabel)          # rótulo do eixo Y (taxa de merge em %)
+    ax.set_xlabel("")              # sem rótulo no eixo X (nomes dos agentes já aparecem)
+    ax.legend(title="Tipo de tarefa", bbox_to_anchor=(1.0, 1.0))  # legenda fora da área
+    plt.xticks(rotation=30, ha="right")  # inclina os nomes dos agentes
     plt.tight_layout()             # ajusta margens para nada ficar cortado
     out = OUTPUT_DIR / file        # caminho final dentro de outputs/
     plt.savefig(out, dpi=120)      # salva o PNG no disco
@@ -234,52 +258,60 @@ PT_LABELS = {
 def to_portuguese(table, columns_name=None):
     """Renomeia colunas e eixos para português, apenas para exibição."""
     t = table.rename(columns=PT_LABELS).rename_axis("Agente")
-    if columns_name is not None:        # ex.: RQ4 também nomeia o eixo das colunas
+    if columns_name is not None:        # ex.: RQ3 também nomeia o eixo das colunas
         t = t.rename_axis(columns=columns_name)
     return t
 
 
 def main():
     print(f"[i] lendo de: {DATA_DIR}")   # mostra a origem dos dados (local ou HF)
-
+    
     # ---- RQ1: carrega TODOS os PRs de agentes e mede aceitação/rejeição ----
-    agents = load_prs("all_pull_request.parquet")
-
     print("\n========================= RQ1. ACEITAÇÃO / REJEIÇÃO POR AGENTE =========================\n")
-    tab_acc = acceptance_by_agent(agents)
+    agents = load_prs("all_pull_request.parquet")  # Carrega uma tabela de PRs e garante as colunas que usamos (aceitação/rejeição/open).
+    tab_acc = acceptance_by_agent(agents) # calcula taxa de aceitação/rejeição/open/IC por agente
     print(to_portuguese(tab_acc))         # imprime a tabela (rótulos em português)
     bar_chart(tab_acc["merge_rate"],      # e salva o gráfico de taxa de merge
               "Taxa de merge por agente (%)", "% mesclado",
-              "q_taxa_merge.png")
+              "RQ1_taxa_merge.png")
 
-    print("\n\n========================= RQ3. AGENTES vs HUMANOS (taxa de merge) =========================\n")
-    # ---- RQ3: adiciona o baseline humano e compara na mesma métrica ----
+    # ---- RQ2: esforço de revisão (só existe no subset AIDev-pop) ----
+    print("\n\n============================ RQ2. ESFORÇO DE REVISÃO POR AGENTE ============================\n")
+    try:
+        pop = load_prs("pull_request.parquet")  # PRs de repos populares
+        tab_review = review_effort(pop) # calcula média de revisões, CHANGES_REQUESTED e comentários inline por PR
+        print(to_portuguese(tab_review))
+        bar_chart(tab_review["mean_changes_requested"],
+                  "Média de revisões 'CHANGES_REQUESTED' por PR",
+                  "média por PR", "RQ2_changes_requested.png")
+    except FileNotFoundError as e:
+        # Se as tabelas de revisão não existirem, apenas avisa e segue em frente.
+        print(f"[!] pulei esforço de revisão: {e}")
+
+    # ---- RQ3: taxa de merge por agente e tipo de tarefa (feat/fix/docs...) ----
+    print("\n\n============================= RQ3. TAXA DE MERGE POR TIPO DE TAREFA (%) =============================\n")
+    try:
+        tab_type = acceptance_by_type(agents)         # tabela agente x tipo de tarefa
+        print(to_portuguese(tab_type, columns_name="tipo"))
+        grouped_bar_chart(tab_type,                   # barras agrupadas por agente
+                          "Taxa de merge por tipo de tarefa (%)",
+                          "% mesclado", "RQ3_taxa_merge_por_tipo.png")
+    except FileNotFoundError as e:
+        print(f"[!] pulei controle por tipo: {e}")
+
+    # ---- RQ4: adiciona o baseline humano e compara na mesma métrica ----
+    print("\n\n========================= RQ4. AGENTES vs HUMANOS (taxa de merge) =========================\n")
     humans = load_prs("human_pull_request.parquet", agent_label="Human")
     # concat empilha os dois DataFrames; ignore_index renumera as linhas.
     combined = pd.concat([agents, humans], ignore_index=True)
 
     # Reaproveita a mesma função de RQ1, agora com 'Human' incluso.
-    print(to_portuguese(acceptance_by_agent(combined)[["n_prs", "merge_rate"]]))
-
-    # ---- RQ2: esforço de revisão (só existe no subset AIDev-pop) ----
-    try:
-        pop = load_prs("pull_request.parquet")  # PRs de repos populares
-        print("\n\n============================ RQ2. ESFORÇO DE REVISÃO POR AGENTE ============================\n")
-        tab_review = review_effort(pop)
-        print(to_portuguese(tab_review))
-        bar_chart(tab_review["mean_changes_requested"],
-                  "Média de revisões 'CHANGES_REQUESTED' por PR",
-                  "média por PR", "q_changes_requested.png")
-    except FileNotFoundError as e:
-        # Se as tabelas de revisão não existirem, apenas avisa e segue em frente.
-        print(f"[!] pulei esforço de revisão: {e}")
-
-    # ---- RQ4: taxa de merge controlada por tipo de tarefa ----
-    print("\n\n============================= RQ4. TAXA DE MERGE POR TIPO DE TAREFA (%) =============================\n")
-    try:
-        print(to_portuguese(acceptance_by_type(agents), columns_name="tipo"))
-    except FileNotFoundError as e:
-        print(f"[!] pulei controle por tipo: {e}")
+    tab_humans = acceptance_by_agent(combined)[["n_prs", "merge_rate"]]
+    print(to_portuguese(tab_humans))
+    # Gráfico da taxa de merge com o baseline 'Human' na mesma escala dos agentes.
+    bar_chart(tab_humans["merge_rate"],
+              "Taxa de merge: agentes vs. humanos (%)", "% mesclado",
+              "RQ4_agentes_vs_humanos.png")
 
     # Lembrete de interpretação dos resultados.
     print("\nPronto. Interprete: maior taxa de merge e menor 'changes_requested' "

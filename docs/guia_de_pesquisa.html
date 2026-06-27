@@ -167,12 +167,12 @@ métrica está detalhada na §5.2):</p>
 de rejeição dos PRs de cada agente?</p>
 <p><span class="rq">RQ2</span> <strong>Esforço de revisão.</strong> Qual o esforço de
 revisão exigido pelos PRs de cada agente?</p>
-<p><span class="rq">RQ3</span> <strong>Comparação com baseline humano.</strong> Como
-os agentes se comparam a um baseline de PRs humanos sobre as mesmas métricas de aceitação (RQ1) e de esforço de
-revisão (RQ2)?</p>
-<p><span class="rq">RQ4</span> <strong>Efeito do tipo de tarefa.</strong> A taxa de
+<p><span class="rq">RQ3</span> <strong>Efeito do tipo de tarefa.</strong> A taxa de
 aceitação varia conforme a categoria da tarefa (<code>feat</code>, <code>fix</code>,
 <code>docs</code>…)?</p>
+<p><span class="rq">RQ4</span> <strong>Comparação com baseline humano.</strong> Como
+os agentes se comparam a um baseline de PRs humanos sobre as mesmas métricas de aceitação (RQ1) e de esforço de
+revisão (RQ2)?</p>
 <p><span class="rq">RQ5</span> <strong>Qualidade estática intrínseca.</strong> O código
 adicionado pelos agentes apresenta maior densidade de problemas estáticos? Como
 isso varia por agente?</p>
@@ -242,12 +242,12 @@ por chaves consistentes (<code>id</code>/<code>pr_id</code>, <code>repo_id</code
 <table>
   <thead><tr><th>Tabela</th><th>Conteúdo</th><th>Uso na pesquisa</th></tr></thead>
   <tbody>
-    <tr><td><code>all_pull_request</code></td><td>Todos os PRs: título, corpo, agente, estado, datas de criação/fechamento/merge</td><td>RQ1, RQ4</td></tr>
-    <tr><td><code>human_pull_request</code></td><td>PRs autorados por humanos (baseline)</td><td>RQ3</td></tr>
+    <tr><td><code>all_pull_request</code></td><td>Todos os PRs: título, corpo, agente, estado, datas de criação/fechamento/merge</td><td>RQ1, RQ3</td></tr>
+    <tr><td><code>human_pull_request</code></td><td>PRs autorados por humanos (baseline)</td><td>RQ4</td></tr>
     <tr><td><code>pull_request</code></td><td>PRs do subset AIDev-pop (repos populares)</td><td>RQ2, RQ6</td></tr>
     <tr><td><code>pr_reviews</code></td><td>Revisões formais (<code>APPROVED</code>, <code>CHANGES_REQUESTED</code>…)</td><td>RQ2</td></tr>
     <tr><td><code>pr_review_comments_v2</code></td><td>Comentários inline nas revisões</td><td>RQ2</td></tr>
-    <tr><td><code>pr_task_type</code></td><td>Classificação da tarefa via LLM (estilo Conventional Commits)</td><td>RQ4</td></tr>
+    <tr><td><code>pr_task_type</code></td><td>Classificação da tarefa via LLM (estilo Conventional Commits)</td><td>RQ3</td></tr>
     <tr><td><code>pr_commit_details</code></td><td>Diffs/patches por arquivo, linhas adicionadas/removidas</td><td>RQ5, RQ6</td></tr>
     <tr><td><code>pr_timeline</code></td><td>Eventos do PR (commits, merge, deploy…); o último <code>committed</code> dá o <code>head_sha</code></td><td>RQ6</td></tr>
   </tbody>
@@ -327,8 +327,8 @@ contribuição que se correlacionam com qualidade.
 <ol>
   <li>Derivar <code>merged</code> e <code>rejected</code> de cada PR a partir das datas.</li>
   <li>Agregar por agente para RQ1 e RQ2.</li>
-  <li>Concatenar PRs humanos (rótulo <code>Human</code>) para RQ3.</li>
-  <li>Juntar (<code>join</code>) com <code>pr_task_type</code> por <code>id</code> para RQ4.</li>
+  <li>Juntar (<code>join</code>) com <code>pr_task_type</code> por <code>id</code> para RQ3.</li>
+  <li>Concatenar PRs humanos (rótulo <code>Human</code>) para RQ4.</li>
   <li>Para o esforço de revisão, ligar revisões e comentários ao PR via <code>pr_id</code>
       / <code>pull_request_review_id</code>.</li>
 </ol>
@@ -431,6 +431,29 @@ parte a PRs indecisos, não a recusas. Distinguir <em>recusa</em> de <em>abandon
     <tr><td>OpenAI Codex</td><td class="num">0,21</td><td class="num">0,01</td><td class="num">0,18</td></tr>
   </tbody>
 </table>
+<div class="box">
+  <h4>O que mede cada coluna</h4>
+  <ul>
+    <li><strong>Média de revisões/PR.</strong> Número médio de <em>revisões formais</em>
+        por PR. No GitHub, uma "revisão" é um veredito submetido por um revisor
+        (<code>APPROVED</code>, <code>CHANGES_REQUESTED</code> ou <code>COMMENTED</code>).
+        <strong>Não</strong> é o nº de pessoas: a mesma pessoa pode revisar várias vezes
+        (pede mudança e depois volta para aprovar). Mede, portanto, <em>rodadas de
+        revisão</em> por PR (tabela <code>pr_reviews</code>).</li>
+    <li><strong>Média CHANGES_REQUESTED/PR.</strong> Quantas dessas revisões, em média,
+        <strong>bloquearam</strong> o PR pedindo correções (veredito
+        <code>CHANGES_REQUESTED</code>). É um subconjunto da coluna anterior e o sinal
+        mais direto de <em>retrabalho exigido</em>.</li>
+    <li><strong>Média comentários inline/PR.</strong> Número médio de comentários
+        <em>inline</em> — presos a uma linha específica do diff ("nesta linha, faça X").
+        Não conta comentários gerais da conversa, só os ancorados no código
+        (<code>pr_review_comments_v2</code>). Mede o <em>detalhamento</em> da revisão,
+        linha a linha.</li>
+  </ul>
+  Lendo as três juntas: muitas revisões + muitos <code>CHANGES_REQUESTED</code> +
+  muitos comentários inline indicam um PR que deu trabalho e gerou idas-e-vindas —
+  sinal de menor qualidade percebida.
+</div>
 <p>
 <strong>Discussão.</strong> Em geral, quem é mais aceito gera menos retrabalho: o
 <strong>Copilot</strong> concentra o maior esforço de revisão (3,24 revisões, 0,22
@@ -439,10 +462,61 @@ aceitação. O contraponto é o <strong>Codex</strong>, que recebe revisão quas
 (0,21 revisão/PR). Aqui é preciso cautela: revisão baixíssima pode indicar PRs
 simples <em>ou</em> um fluxo de aceitação mais automático/confiante — não
 necessariamente código melhor (ver §7). Ou seja, a RQ2 sozinha é ambígua e precisa
-da RQ4 e da RQ5 para ser interpretada.
+da RQ3 e da RQ5 para ser interpretada.
 </p>
 
-<h3>6.3 <span class="rq">RQ3</span> Agentes vs. humanos</h3>
+<h3>6.3 <span class="rq">RQ3</span> Taxa de merge por tipo de tarefa (%)</h3>
+<table>
+  <thead><tr><th>Agente</th><th>docs</th><th>build</th><th>feat</th><th>fix</th><th>refactor</th><th>test</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAI Codex</td><td class="num">92,2</td><td class="num">87,0</td><td class="num">80,7</td><td class="num">81,6</td><td class="num">79,8</td><td class="num">83,8</td></tr>
+    <tr><td>Claude Code</td><td class="num">75,0</td><td class="num">87,5</td><td class="num">56,8</td><td class="num">57,4</td><td class="num">50,0</td><td class="num">50,0</td></tr>
+    <tr><td>Cursor</td><td class="num">74,4</td><td class="num">57,1</td><td class="num">60,4</td><td class="num">68,4</td><td class="num">64,9</td><td class="num">62,2</td></tr>
+    <tr><td>Devin</td><td class="num">71,3</td><td class="num">57,8</td><td class="num">54,4</td><td class="num">42,9</td><td class="num">56,8</td><td class="num">50,4</td></tr>
+    <tr><td>Copilot</td><td class="num">60,7</td><td class="num">49,6</td><td class="num">38,0</td><td class="num">42,4</td><td class="num">47,8</td><td class="num">36,5</td></tr>
+  </tbody>
+</table>
+<div class="box destaque">
+  <h4>Padrão consistente</h4>
+  Para <em>todos</em> os agentes, tarefas de <code>docs</code>/<code>build</code>
+  têm aceitação mais alta que <code>feat</code>/<code>fix</code>/<code>refactor</code>.
+  Ou seja: quanto mais o código mexe na lógica do sistema, menor a taxa de
+  aceitação — evidência de que a qualidade dos agentes ainda é mais frágil em
+  tarefas complexas.
+</div>
+<p>
+<strong>Discussão.</strong> Este é o resultado <strong>mais defensável</strong> do
+estudo: por se repetir em todos os agentes — apesar de volumes e janelas de coleta
+muito diferentes —, ele é o menos sensível a artefatos metodológicos. O padrão tem
+duas leituras complementares.
+</p>
+<p>
+<strong>(1) A queda é universal, mas desigual.</strong> Toda ferramenta perde
+aceitação ao sair de <code>docs</code>/<code>build</code> para
+<code>feat</code>/<code>fix</code>/<code>refactor</code>, mas a <em>magnitude</em> da
+queda separa os agentes. O Codex é o mais <strong>resiliente</strong> (de 92,2% em
+<code>docs</code> para 79,8% em <code>refactor</code>, ~12 pp) e nunca cai abaixo de
+~80%. O Claude Code despenca (de 87,5% em <code>build</code> para 50,0% em
+<code>refactor</code>/<code>test</code>, ~37 pp), e o Copilot é o mais frágil em
+lógica (38,0% em <code>feat</code>, 36,5% em <code>test</code>). Ou seja: quanto mais
+o código toca a lógica do sistema, mais a qualidade percebida dos agentes se
+degrada — e de forma muito desigual entre eles.
+</p>
+<p>
+<strong>(2) Isso requalifica a RQ1 — e amplia o ranking, não o estreita.</strong> A
+liderança do Codex não só se mantém nas tarefas complexas: ela <em>aumenta</em>. A
+vantagem do Codex sobre o Claude Code passa de ~17 pp em <code>docs</code> (92,2 vs
+75,0) para ~30 pp em <code>refactor</code> (79,8 vs 50,0). A taxa agregada da RQ1,
+portanto, <strong>achata</strong> diferenças que só aparecem quando se controla o
+tipo de tarefa: é justamente no código que mexe na lógica — onde a qualidade mais
+importa — que os agentes mais se distinguem. Isso sustenta a tese central de uma
+<em>lacuna de qualidade em tarefas complexas</em>, agora com uma nuance: a lacuna
+existe <em>dentro</em> de cada agente (simples vs. complexo) e <em>entre</em> agentes
+(resiliência distinta), e a RQ5 ajuda a investigar se essa fragilidade aparece também
+na qualidade intrínseca do código.
+</p>
+
+<h3>6.4 <span class="rq">RQ4</span> Agentes vs. humanos</h3>
 <div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
 <div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill destaque" style="width:76.8%">76,8%</div></div></div>
 <div class="bar-row"><div class="bar-label">Humanos</div><div class="bar-track"><div class="bar-fill humano" style="width:76.8%">76,8%</div></div></div>
@@ -463,33 +537,6 @@ equivalência tarefa a tarefa. Além disso, como a taxa é calculada sobre
 <em>todos</em> os PRs, agentes com muitos PRs <em>em aberto</em> (Cursor e Copilot,
 ~20% — ver RQ1) têm a aceitação subestimada aqui: parte dos seus PRs ainda não foi
 decidida, e não necessariamente recusada.
-</p>
-
-<h3>6.4 <span class="rq">RQ4</span> Taxa de merge por tipo de tarefa (%)</h3>
-<table>
-  <thead><tr><th>Agente</th><th>docs</th><th>build</th><th>feat</th><th>fix</th><th>refactor</th><th>test</th></tr></thead>
-  <tbody>
-    <tr><td>OpenAI Codex</td><td class="num">92,2</td><td class="num">87,0</td><td class="num">80,7</td><td class="num">81,6</td><td class="num">79,8</td><td class="num">83,8</td></tr>
-    <tr><td>Claude Code</td><td class="num">75,0</td><td class="num">87,5</td><td class="num">56,8</td><td class="num">57,4</td><td class="num">50,0</td><td class="num">50,0</td></tr>
-    <tr><td>Cursor</td><td class="num">74,4</td><td class="num">57,1</td><td class="num">60,4</td><td class="num">68,4</td><td class="num">64,9</td><td class="num">62,2</td></tr>
-    <tr><td>Devin</td><td class="num">71,3</td><td class="num">57,8</td><td class="num">54,4</td><td class="num">42,9</td><td class="num">56,8</td><td class="num">50,4</td></tr>
-    <tr><td>Copilot</td><td class="num">60,7</td><td class="num">49,6</td><td class="num">38,0</td><td class="num">42,4</td><td class="num">47,8</td><td class="num">36,5</td></tr>
-  </tbody>
-</table>
-<div class="box destaque">
-  <h4>Padrão consistente</h4>
-  Para <em>todos</em> os agentes, tarefas de <code>docs</code>/<code>build</code>
-  têm aceitação mais alta que <code>feat</code>/<code>fix</code>/<code>refactor</code>.
-  Ou seja: quanto mais o código mexe na lógica do sistema, menor a taxa de
-  aceitação — evidência de que a qualidade dos agentes ainda é mais frágil em
-  tarefas complexas.
-</div>
-<p>
-<strong>Discussão.</strong> Por ser um padrão consistente entre agentes com volumes
-e coletas diferentes, é o resultado menos sensível a artefatos metodológicos — e o
-mais defensável. Ele também <strong>requalifica a RQ1</strong>: parte da liderança
-do Codex se estreita quando olhamos só tarefas que mexem na lógica do sistema,
-sustentando a tese de uma <em>lacuna de qualidade em tarefas complexas</em>.
 </p>
 
 <h3>6.5 <span class="rq">RQ5</span> Qualidade estática intrínseca (preliminar)</h3>
@@ -662,8 +709,8 @@ inteiro) para economizar tempo e disco.
 <div class="box destaque">
   <h4>Síntese: quatro níveis de evidência</h4>
   Juntando todas as RQs: (1) há uma <strong>hierarquia de aceitação</strong> estável
-  (RQ1–RQ3), com Codex e Claude Code no topo, já no nível humano; (2) essa vantagem
-  <strong>encolhe em tarefas complexas</strong> (RQ4), o achado mais robusto;
+  (RQ1–RQ2), com Codex e Claude Code no topo, já no nível humano (RQ4); (2) essa vantagem
+  <strong>encolhe em tarefas complexas</strong> (RQ3), o achado mais robusto;
   (3) aceitação <strong>não equivale a qualidade estática de código</strong> (RQ5); e
   (4) a RQ6 fecha o arco indo da qualidade <em>estática</em> à <em>dinâmica</em>
   (cobertura + mutação) — perguntando não só se o código é limpo, mas se ele está de
@@ -702,7 +749,7 @@ abre proporcionalmente mais <code>docs</code> (fáceis de aceitar) parece melhor
 composição.
 </p>
 <p>
-<strong>Mitigações.</strong> Controlamos pelo tipo de tarefa (RQ4) e usamos amostragem
+<strong>Mitigações.</strong> Controlamos pelo tipo de tarefa (RQ3) e usamos amostragem
 <em>estratificada por agente</em> (RQ5/RQ6) para dar voz aos agentes menores. Como
 continuação, recomendam-se: <strong>intervalos de confiança</strong> (Wilson) ou testes
 de proporção em cada taxa, para tornar a incerteza desigual explícita; um

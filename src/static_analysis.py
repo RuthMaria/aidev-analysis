@@ -204,7 +204,7 @@ def main():
     print(to_portuguese(table))
     bar_chart(table["warnings_per_100loc"],
               "Densidade de warnings (ruff) por agente",
-              "warnings por 100 linhas", "q_static_warnings.png")
+              "warnings por 100 linhas", "RQ5_static_warnings.png")
 
     print("\nInterprete: menor densidade de warnings e maior taxa de 'compila' "
           "sugerem código intrinsecamente mais limpo, independente da aceitação.")
