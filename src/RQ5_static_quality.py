@@ -31,6 +31,7 @@ import os
 import json
 import tempfile
 import subprocess
+import multiprocessing as mp
 from pathlib import Path
 
 import pandas as pd
@@ -40,7 +41,21 @@ import lizard
 from RQ1_to_RQ4_perceived_quality import path, OUTPUT_DIR, load_prs, bar_chart
 
 # Quantos arquivos .py analisar. 0 = todos (lento). Padrão = amostra.
-SAMPLE = int(os.environ.get("AIDEV_RQ5_SAMPLE", "5000"))
+SAMPLE = int(os.environ.get("AIDEV_RQ5_SAMPLE", "0"))
+
+# Limite de tamanho por fragmento para o lizard. Diffs gigantes (código gerado,
+# arquivos vendados, dumps) fazem o parser do lizard explodir em tempo — alguns
+# fragmentos sozinhos levam minutos. Como são outliers e a complexidade de um
+# trecho de diff malformado não é significativa, pulamos (complexidade = NaN)
+# acima destes limites. Mantém a rodada do dataset completo previsível.
+MAX_FRAGMENT_LINES = int(os.environ.get("AIDEV_RQ5_MAX_LINES", "800"))
+MAX_FRAGMENT_CHARS = int(os.environ.get("AIDEV_RQ5_MAX_CHARS", "20000"))
+
+# Timeout (segundos) por fragmento no lizard. Mesmo passando pelo guard de
+# tamanho, alguns diffs travam o parser do lizard por minutos. Rodamos cada
+# chamada num processo filho; se exceder este tempo, o worker é morto e o
+# fragmento vira NaN — garante que a fase termine em tempo previsível.
+LIZARD_TIMEOUT = float(os.environ.get("AIDEV_RQ5_LIZARD_TIMEOUT", "3"))
 
 
 def added_lines(patch):
@@ -110,7 +125,12 @@ def mean_complexity(code):
     """Complexidade ciclomática média das funções do fragmento (via lizard).
 
     O lizard é tolerante a código parcial. Devolve NaN se não houver função.
+    Fragmentos acima dos limites de tamanho são pulados (NaN) para evitar que
+    diffs gigantes/gerados travem o parser (ver MAX_FRAGMENT_*).
     """
+    # Guard de tamanho: pula outliers que fariam o lizard demorar minutos.
+    if len(code) > MAX_FRAGMENT_CHARS or code.count("\n") > MAX_FRAGMENT_LINES:
+        return float("nan")
     try:
         info = lizard.analyze_file.analyze_source_code("frag.py", code)
     except Exception:
@@ -119,6 +139,39 @@ def mean_complexity(code):
         return float("nan")
     ccns = [f.cyclomatic_complexity for f in info.function_list]
     return sum(ccns) / len(ccns)
+
+
+def lizard_column(codes):
+    """Aplica mean_complexity a cada fragmento com TIMEOUT por item.
+
+    Roda cada chamada num processo filho dedicado (mp.Pool de 1 worker). Se uma
+    chamada exceder LIZARD_TIMEOUT segundos (diff que trava o parser do lizard
+    mesmo passando pelo guard de tamanho), o worker é encerrado e recriado, e o
+    fragmento recebe NaN. Assim a fase termina em tempo previsível, em vez de
+    travar indefinidamente. Imprime progresso a cada 5000 fragmentos.
+    """
+    total = len(codes)
+    results = [float("nan")] * total      # default NaN (vale p/ os que derem timeout)
+    skipped = 0                            # quantos foram pulados por timeout
+    pool = mp.Pool(1)                      # 1 worker isolado para poder matá-lo
+    try:
+        for i, code in enumerate(codes):
+            async_res = pool.apply_async(mean_complexity, (code,))
+            try:
+                results[i] = async_res.get(timeout=LIZARD_TIMEOUT)
+            except mp.TimeoutError:
+                # Worker preso num fragmento patológico: mata e recria limpo.
+                pool.terminate()
+                pool.join()
+                pool = mp.Pool(1)
+                skipped += 1
+            if (i + 1) % 5000 == 0 or (i + 1) == total:
+                print(f"    lizard: {i + 1:,}/{total:,} fragmentos "
+                      f"({skipped} pulados por timeout)")
+    finally:
+        pool.terminate()                   # garante que o worker não fique órfão
+        pool.join()
+    return results
 
 
 def load_python_files():
@@ -187,17 +240,25 @@ def static_quality_by_agent(df):
 
 def main():
     print(f"[i] RQ5 - análise estática (amostra = {SAMPLE or 'todos'} arquivos .py)")
-    print("[i] carregando patches de pr_commit_details ...")
-    df = load_python_files()
+    print("[i] Carregando patches de pr_commit_details ...")
+    df = load_python_files() # carrega os arquivos .py com código adicionado e metadados do PR
     print(f"[i] {len(df):,} arquivos .py com código adicionado para analisar")
 
-    print("[i] rodando ruff (lint) ...")
+    print("[i] Rodando ruff (lint) ...")
     ruff = run_ruff(df["code"])
     df["n_warnings"] = df.index.map(lambda i: ruff[i]["n_warnings"])
     df["syntax_error"] = df.index.map(lambda i: ruff[i]["syntax_error"])
 
-    print("[i] rodando lizard (complexidade) ...")
-    df["mean_ccn"] = df["code"].map(mean_complexity)
+    # Lizard com timeout por fragmento (fase mais lenta; ver lizard_column).
+    print(f"[i] Rodando lizard (complexidade, timeout={LIZARD_TIMEOUT}s/fragmento) ...")
+    df["mean_ccn"] = lizard_column(df["code"].tolist())
+
+    # Checkpoint: salva o resultado POR ARQUIVO em CSV antes de agregar, para que
+    # a computação cara (ruff + lizard) nunca se perca e possa ser reanalisada.
+    per_file = OUTPUT_DIR / "RQ5_per_file.csv"
+    cols = ["agent", "type", "added_loc", "n_warnings", "syntax_error", "mean_ccn"]
+    df[[c for c in cols if c in df.columns]].to_csv(per_file, index=False, encoding="utf-8")
+    print(f"\n-> Resultado por arquivo salvo em {per_file}")
 
     print("\n===================== RQ5. QUALIDADE ESTÁTICA POR AGENTE =====================\n")
     table = static_quality_by_agent(df)
@@ -205,6 +266,10 @@ def main():
     bar_chart(table["warnings_per_100loc"],
               "Densidade de warnings (ruff) por agente",
               "warnings por 100 linhas", "RQ5_static_warnings.png")
+    # Gráfico da complexidade ciclomática média (ordenado do menor ao maior).
+    bar_chart(table["mean_ccn"].sort_values(),
+              "Complexidade ciclomática média por agente",
+              "complexidade média (lizard)", "RQ5_static_complexity.png")
 
     print("\nInterprete: menor densidade de warnings e maior taxa de 'compila' "
           "sugerem código intrinsecamente mais limpo, independente da aceitação.")

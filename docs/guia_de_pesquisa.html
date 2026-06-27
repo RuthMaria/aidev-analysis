@@ -115,15 +115,15 @@ rejeição, esforço de revisão — e comparamos os agentes entre si, contra um
 baseline humano, controlando pelo tipo de tarefa.
 </p>
 <div class="box destaque">
-  <h4>Principal achado preliminar</h4>
+  <h4>Principais achados</h4>
   A taxa de aceitação varia muito entre agentes (de <strong>59% a 88%</strong>).
   O OpenAI Codex supera inclusive os humanos em aceitação, enquanto Claude Code
   empata com humanos (76,8%) e Copilot/Devin ficam abaixo. A qualidade percebida
   cai sistematicamente em tarefas mais complexas (<code>feat</code>, <code>fix</code>)
-  comparada a tarefas simples (<code>docs</code>, <code>build</code>). Uma análise
-  estática preliminar (RQ5) mostra ainda que a <strong>aceitação não acompanha a
-  limpeza do código</strong>: o agente menos aceito (Copilot) é o que gera a menor
-  densidade de <em>warnings</em> de lint.
+  comparada a tarefas simples (<code>docs</code>, <code>build</code>). A análise
+  estática (RQ5), sobre o dataset completo, mostra ainda que a <strong>aceitação não
+  acompanha a limpeza do código</strong>: o agente menos aceito (Copilot) é o que
+  gera a menor densidade de <em>warnings</em> de lint.
 </div>
 </section>
 
@@ -539,48 +539,70 @@ equivalência tarefa a tarefa. Além disso, como a taxa é calculada sobre
 decidida, e não necessariamente recusada.
 </p>
 
-<h3>6.5 <span class="rq">RQ5</span> Qualidade estática intrínseca (preliminar)</h3>
+<h3>6.5 <span class="rq">RQ5</span> Qualidade estática intrínseca</h3>
 <p>
-Resultado <strong>preliminar</strong>, sobre uma amostra de <strong>1.851 arquivos
-Python</strong> extraídos dos patches de <code>pr_commit_details</code>. Para cada
-arquivo medimos a densidade de <em>warnings</em> de lint (<code>ruff</code>, regra
-<code>ALL</code>) por 100 linhas adicionadas e a complexidade ciclomática média
-(<code>lizard</code>).
+Resultado sobre o <strong>dataset completo</strong>: <strong>43.510 arquivos
+Python</strong> com código adicionado, extraídos dos patches de
+<code>pr_commit_details</code> (sem amostragem). Para cada arquivo medimos a
+densidade de <em>warnings</em> de lint (<code>ruff</code>, regra <code>ALL</code>)
+por 100 linhas adicionadas e a complexidade ciclomática média (<code>lizard</code>).
 </p>
 <table>
   <thead><tr><th>Agente</th><th>#arquivos</th><th>% compila</th><th>Warnings/100 linhas</th><th>Complexidade média</th></tr></thead>
   <tbody>
-    <tr><td>Copilot</td><td class="num">329</td><td class="num">100,0</td><td class="num">36,6</td><td class="num">3,14</td></tr>
-    <tr><td>OpenAI Codex</td><td class="num">820</td><td class="num">100,0</td><td class="num">43,2</td><td class="num">2,39</td></tr>
-    <tr><td>Claude Code</td><td class="num">113</td><td class="num">100,0</td><td class="num">45,7</td><td class="num">3,00</td></tr>
-    <tr><td>Devin</td><td class="num">396</td><td class="num">100,0</td><td class="num">56,2</td><td class="num">2,72</td></tr>
-    <tr><td>Cursor</td><td class="num">193</td><td class="num">100,0</td><td class="num">65,7</td><td class="num">3,43</td></tr>
+    <tr><td>Copilot</td><td class="num">8.240</td><td class="num">100,0</td><td class="num">37,86</td><td class="num">3,03</td></tr>
+    <tr><td>Claude Code</td><td class="num">2.362</td><td class="num">100,0</td><td class="num">46,54</td><td class="num">2,89</td></tr>
+    <tr><td>OpenAI Codex</td><td class="num">18.915</td><td class="num">100,0</td><td class="num">46,72</td><td class="num">2,48</td></tr>
+    <tr><td>Devin</td><td class="num">9.916</td><td class="num">100,0</td><td class="num">50,27</td><td class="num">2,75</td></tr>
+    <tr><td>Cursor</td><td class="num">4.077</td><td class="num">100,0</td><td class="num">59,52</td><td class="num">3,24</td></tr>
   </tbody>
 </table>
 <p>Densidade de <em>warnings</em> por 100 linhas (quanto <strong>menor</strong>, mais limpo):</p>
-<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill destaque" style="width:36.6%">36,6</div></div></div>
-<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:43.2%">43,2</div></div></div>
-<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:45.7%">45,7</div></div></div>
-<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:56.2%">56,2</div></div></div>
-<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track"><div class="bar-fill" style="width:65.7%">65,7</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill destaque" style="width:37.86%">37,86</div></div></div>
+<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:46.54%">46,54</div></div></div>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:46.72%">46,72</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:50.27%">50,27</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track"><div class="bar-fill" style="width:59.52%">59,52</div></div></div>
+<p>Complexidade ciclomática média (quanto <strong>menor</strong>, mais simples; barras em escala):</p>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill destaque" style="width:62%">2,48</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:68.75%">2,75</div></div></div>
+<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track"><div class="bar-fill" style="width:72.25%">2,89</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill" style="width:75.75%">3,03</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track"><div class="bar-fill" style="width:81%">3,24</div></div></div>
 <div class="box alerta">
-  <h4>Achado surpreendente: aceitação ≠ qualidade estática</h4>
+  <h4>Achado: aceitação ≠ qualidade estática</h4>
   A ordem da RQ5 <strong>não</strong> reproduz a da aceitação (RQ1). O
   <strong>Copilot</strong>, que tem a <em>menor</em> taxa de merge (59%), escreve o
-  código com a <em>menor</em> densidade de warnings; o <strong>Cursor</strong>
-  concentra mais avisos. Isso reforça uma tese central: a <strong>taxa de merge
-  mede aceitação, não corretude/limpeza intrínseca</strong> — as duas dimensões
-  podem divergir, e por isso a triangulação da RQ5 é valiosa.
+  código com a <em>menor</em> densidade de warnings (37,9 por 100 linhas); o
+  <strong>Cursor</strong> concentra mais avisos (59,5). Mais revelador ainda:
+  <strong>Codex e Claude Code</strong>, com aceitação bem diferente (87,7% vs 76,8%),
+  <strong>empatam</strong> em qualidade estática (46,7 vs 46,5). Isso reforça a tese
+  central: a <strong>taxa de merge mede aceitação, não corretude/limpeza
+  intrínseca</strong> — as duas dimensões divergem, e por isso a triangulação da RQ5
+  é valiosa.
+</div>
+<div class="box destaque">
+  <h4>Por que o dataset completo (e não uma amostra)</h4>
+  Uma versão preliminar rodou sobre uma amostra de ~1,8 mil arquivos e chegou a
+  <strong>inverter o meio do ranking</strong>: na amostra, o Codex parecia mais limpo
+  que o Claude Code (43,2 vs 45,7); no dataset completo eles <em>empatam</em>
+  (46,7 vs 46,5). Amostras pequenas reordenam posições próximas por puro <em>ruído</em>
+  — o mesmo fenômeno tratado na RQ1 com os intervalos de confiança. Por isso a RQ5
+  final usa <strong>todos</strong> os 43.510 arquivos: o que é estável (Copilot mais
+  limpo, Cursor menos) se confirma; o que era artefato de amostragem (a ordem
+  Codex/Claude) desaparece. Esta é a lição metodológica que sustenta a confiabilidade
+  do resultado.
 </div>
 <div class="box">
   <h4>Como ler estes números (ressalvas)</h4>
-  São <strong>preliminares</strong>: (a) amostra de ~1,8 mil arquivos, com poucos
-  do Claude Code (113); (b) só Python; (c) analisamos as <em>linhas adicionadas</em>
-  do diff, não o arquivo completo (limitação do dataset, §7); (d) a regra
-  <code>ALL</code> do <code>ruff</code> é severa e infla a contagem absoluta —
-  o que importa aqui é a <em>comparação relativa</em> entre agentes. A taxa de
-  "% compila" de 100% reflete que, nesta amostra, os fragmentos eram em sua maioria
-  arquivos novos (completos).
+  (a) só Python; (b) analisamos as <em>linhas adicionadas</em> do diff, não o arquivo
+  completo (limitação do dataset, §7); (c) a regra <code>ALL</code> do <code>ruff</code>
+  é severa e infla a contagem absoluta — o que importa é a <em>comparação relativa</em>
+  entre agentes; (d) a complexidade ciclomática pula 4 fragmentos patológicos (que
+  travavam o <em>parser</em>, resolvidos com <em>timeout</em> por fragmento) e arquivos
+  gigantes (<em>guard</em> de tamanho), outliers que não afetam as médias. A
+  "% compila" de 100% reflete que os fragmentos eram majoritariamente arquivos novos
+  (completos).
 </div>
 
 <h3>6.6 <span class="rq">RQ6</span> O código dos agentes é bem testado? — cobertura e mutação (metodologia)</h3>
@@ -768,9 +790,13 @@ fatia em aberto explícita (RQ1) e, idealmente, restringir a PRs decididos ou mo
 o tempo até a decisão controlaria esse viés.
 </p>
 <p>
-<strong>Amostragem da RQ5.</strong> A análise estática rodou sobre uma amostra
-aleatória de ~1,8 mil arquivos Python, com poucos do Claude Code (113). A amostra
-pode não representar o todo; rodar no dataset inteiro é trabalho pendente (§8).
+<strong>Cobertura da RQ5.</strong> A análise estática rodou sobre o <strong>dataset
+completo</strong> (43.510 arquivos Python), eliminando a variabilidade amostral —
+uma versão preliminar em amostra chegava a inverter o meio do ranking (ver §6.5).
+Restam dois limites de construto: a análise é só de Python e sobre as <em>linhas
+adicionadas</em> do diff (não o arquivo completo), e a complexidade ciclomática
+exclui um punhado de fragmentos <em>outliers</em> (4 por <em>timeout</em> do
+<em>parser</em> + arquivos gigantes), o que não afeta as médias agregadas.
 </p>
 <p>
 <strong>Atrito de execução na RQ6.</strong> Os testes dinâmicos só rodam nos repos
@@ -806,14 +832,13 @@ em volta.
 <section id="futuro">
 <h2>8. Trabalhos futuros</h2>
 <ul>
-  <li><strong>Análise estática dos patches</strong> (RQ5 — <em>já implementada de
-      forma preliminar</em>, ver §6.5): extrair os diffs de
-      <code>pr_commit_details</code> e rodar linters por linguagem para medir
-      densidade de problemas no próprio código, não só na aceitação. Próximos
-      passos: estender para além de Python, rodar no dataset inteiro (não só na
-      amostra) e adicionar análise de segurança (<code>bandit</code>/CodeQL) e o
-      <em>maintainability rating</em> do SonarQube numa amostra de repos
-      reconstruídos, para triangular.</li>
+  <li><strong>Análise estática dos patches</strong> (RQ5 — <em>já implementada e
+      executada no dataset completo</em>, ver §6.5): extrai os diffs de
+      <code>pr_commit_details</code> e roda linters para medir densidade de problemas
+      no próprio código, não só na aceitação. Próximos
+      passos: estender para além de Python e adicionar análise de segurança
+      (<code>bandit</code>/CodeQL) e o <em>maintainability rating</em> do SonarQube
+      numa amostra de repos reconstruídos, para triangular.</li>
   <li><strong>Testes dinâmicos</strong> (RQ6 — <em>amostra e runner já
       implementados</em>, ver §6.6): o <em>runner</em>
       (<code>src/mutation_coverage.py</code>) reconstrói os repos e mede
@@ -902,8 +927,8 @@ python src/explore.py
 # 3. Gerar as métricas de qualidade RQ1-RQ4 (tabelas + gráficos PNG)
 python src/RQ1_to_RQ4_perceived_quality.py
 
-# 4. Rodar a análise estática RQ5 (amostra de arquivos Python)
-python src/RQ5_static_quality.py
+# 4. Rodar a análise estática RQ5 (use AIDEV_RQ5_SAMPLE=0 para o dataset completo)
+AIDEV_RQ5_SAMPLE=0 python src/RQ5_static_quality.py
 
 # 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
 python src/sample_for_testing.py            # gera outputs/test_sample.csv
@@ -920,9 +945,12 @@ Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local d
 $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
 python src/RQ1_to_RQ4_perceived_quality.py</code></pre>
 <p>
-A RQ5 analisa por padrão uma amostra de arquivos <code>.py</code>
-(<code>AIDEV_RQ5_SAMPLE</code>, padrão 5000) para ser rápida; use
-<code>AIDEV_RQ5_SAMPLE=0</code> para rodar no dataset inteiro.
+A RQ5 aceita <code>AIDEV_RQ5_SAMPLE</code> para limitar a quantos arquivos
+<code>.py</code> analisar (um valor pequeno serve para testes rápidos). Os
+resultados reportados na §6.5 usam <code>AIDEV_RQ5_SAMPLE=0</code> (dataset
+completo, 43.510 arquivos). A fase do <code>lizard</code> aplica um <em>timeout</em>
+por fragmento (<code>AIDEV_RQ5_LIZARD_TIMEOUT</code>, padrão 3 s) para que diffs
+patológicos não travem a execução.
 </p>
 </section>
 
