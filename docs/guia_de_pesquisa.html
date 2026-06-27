@@ -161,31 +161,23 @@ justamente o que o dataset AIDev fornece.
 produzido por agentes autônomos de IA em pull requests de projetos open-source,
 comparando-os entre si e com desenvolvedores humanos.
 </p>
-<p>As questões de pesquisa (RQs) que guiam o estudo:</p>
-<p><span class="rq">RQ1</span> <strong>Aceitação.</strong> Qual a taxa de
-<em>merge</em> (e de rejeição) dos PRs de cada agente? PRs aceitos são um proxy de
-qualidade percebida pelos mantenedores.</p>
-<p><span class="rq">RQ2</span> <strong>Esforço de revisão.</strong> Quanto
-retrabalho um PR de agente exige antes de ser aceito (pedidos de mudança e
-comentários de revisão)?</p>
-<p><span class="rq">RQ3</span> <strong>Comparação com humanos.</strong> Como os
-agentes se posicionam frente a um baseline de PRs humanos nas mesmas métricas?</p>
-<p><span class="rq">RQ4</span> <strong>Efeito do tipo de tarefa.</strong> A
-qualidade percebida varia conforme a natureza da tarefa (<code>feat</code>,
-<code>fix</code>, <code>docs</code>…)?</p>
-<p><span class="rq">RQ5</span> <strong>Qualidade estática intrínseca.</strong>
-Independentemente da aceitação, o código submetido pelos agentes apresenta maior
-densidade de problemas estáticos (<em>code smells</em>, complexidade, violações de
-estilo) do que o esperado? Como isso varia por agente? Enquanto RQ1–RQ4 medem a
-qualidade <em>percebida</em> (aceitação/revisão), a RQ5 olha o <strong>próprio
-código</strong>, fechando a lacuna que a literatura aponta em estudos baseados só
-em taxa de merge.</p>
-<p><span class="rq">RQ6</span> <strong>Qualidade dinâmica (testes).</strong> O código
-que os agentes adicionam é <em>bem testado</em>? Medimos a <strong>cobertura</strong>
-das linhas adicionadas e o <strong>mutation score</strong> dos arquivos modificados.
-Se a RQ5 é a análise <em>estática</em> (sem executar), a RQ6 é a <em>dinâmica</em>
-(executando a suíte) — e a mutação revela algo que a cobertura sozinha esconde:
-se os testes realmente <em>pegam bugs</em>, não só se passam pelo código.</p>
+<p>As questões de pesquisa (RQs) que guiam o estudo (a operacionalização de cada
+métrica está detalhada na §5.2):</p>
+<p><span class="rq">RQ1</span> <strong>Aceitação.</strong> Qual a taxa de aceitação e
+de rejeição dos PRs de cada agente?</p>
+<p><span class="rq">RQ2</span> <strong>Esforço de revisão.</strong> Qual o esforço de
+revisão exigido pelos PRs de cada agente?</p>
+<p><span class="rq">RQ3</span> <strong>Comparação com baseline humano.</strong> Como
+os agentes se comparam a um baseline de PRs humanos sobre as mesmas métricas de aceitação (RQ1) e de esforço de
+revisão (RQ2)?</p>
+<p><span class="rq">RQ4</span> <strong>Efeito do tipo de tarefa.</strong> A taxa de
+aceitação varia conforme a categoria da tarefa (<code>feat</code>, <code>fix</code>,
+<code>docs</code>…)?</p>
+<p><span class="rq">RQ5</span> <strong>Qualidade estática intrínseca.</strong> O código
+adicionado pelos agentes apresenta maior densidade de problemas estáticos? Como
+isso varia por agente?</p>
+<p><span class="rq">RQ6</span> <strong>Qualidade dinâmica (testabilidade).</strong> O
+código adicionado pelos agentes é adequadamente coberto e testado?</p>
 <div class="box alerta">
   <h4>RQ5 e RQ6 são extensões exploratórias</h4>
   As RQs 1–4 refletem o que o dataset responde com alta confiança. A RQ5 (estática)
@@ -205,6 +197,11 @@ se os testes realmente <em>pegam bugs</em>, não só se passam pelo código.</p>
 contribuições de cinco agentes de codificação em projetos reais do GitHub,
 coletado via a API REST do GitHub. Foi publicado por Hao Li, Haoxiang Zhang e
 Ahmed E. Hassan e serviu de base para o <em>Mining Challenge</em> do MSR 2026.
+Os PRs vão de <strong>dezembro de 2024 a julho de 2025</strong> (~7 meses). As datas
+de início variam por agente, refletindo quando cada um passou a abrir PRs de forma
+autônoma: Devin é o pioneiro (24/12/2024), seguido por Cursor (jan/2025), Claude
+Code (fev/2025), Copilot (mar/2025) e OpenAI Codex (mai/2025) — este último concentra
+814 mil dos 933 mil PRs numa janela de apenas ~2,5 meses.
 </p>
 
 <div class="grid">
@@ -269,6 +266,18 @@ estudo de mineração de repositórios, ela é operacionalizada por
 <strong>proxies observáveis</strong> — sinais registrados pelo processo de
 contribuição que se correlacionam com qualidade.
 </p>
+<div class="box">
+  <h4>O que é um "proxy observável"?</h4>
+  Um <strong>proxy</strong> é um indicador <em>indireto, mas mensurável</em>, usado no
+  lugar de algo que não se mede diretamente: como não existe uma régua para
+  "qualidade", escolhe-se um sinal que se <em>correlaciona</em> com ela e mede-se esse
+  sinal. <strong>Observável</strong> significa que o sinal está de fato registrado e
+  é extraível dos dados (aqui, as tabelas do AIDev). Exemplo: a <em>taxa de merge</em>
+  é um proxy observável — mensurável a partir de <code>merged_at</code> — para a
+  qualidade <em>percebida</em> pelos mantenedores. A ressalva é que um proxy
+  <strong>não é</strong> a coisa em si (a taxa de merge mede aceitação, não corretude
+  — ver §7); por isso usamos <em>vários</em> proxies e triangulamos.
+</div>
 
 <h3>5.2 Proxies adotados</h3>
 <table>
@@ -284,6 +293,18 @@ contribuição que se correlacionam com qualidade.
     <tr><td>Mutation score (RQ6)</td><td>% de mutantes mortos nos arquivos do agente (<code>cosmic-ray</code>)</td><td>os testes são <em>eficazes</em> (pegam bugs)?</td></tr>
   </tbody>
 </table>
+<div class="box">
+  <h4>O que é "densidade de warnings"?</h4>
+  Um <em>linter</em> (como o <code>ruff</code>) lê o código <strong>sem executá-lo</strong>
+  e aponta problemas/más práticas — variável não usada, estilo inconsistente,
+  <em>code smells</em>. Cada apontamento é um <em>warning</em>. Em vez do total bruto
+  (que penalizaria PRs maiores só por serem maiores), normalizamos pelo tamanho:
+  <code>densidade = (nº de warnings ÷ linhas adicionadas) × 100</code>, isto é, avisos
+  por 100 linhas. Assim a comparação entre agentes é justa, independentemente do
+  tamanho do PR; quanto <strong>maior</strong> a densidade, mais problemas por linha
+  (pior a qualidade estática). O mesmo raciocínio de normalização vale para a
+  cobertura (RQ6), calculada só sobre as linhas adicionadas.
+</div>
 <div class="box">
   <h4>RQ5: dos proxies de aceitação aos proxies intrínsecos</h4>
   Os quatro primeiros proxies são <em>extrínsecos</em> (dependem do julgamento de
@@ -302,6 +323,7 @@ contribuição que se correlacionam com qualidade.
 </div>
 
 <h3>5.3 Procedimento de análise</h3>
+<p><strong>RQ1–RQ4 — qualidade percebida</strong> (<code>quality_analysis.py</code>):</p>
 <ol>
   <li>Derivar <code>merged</code> e <code>rejected</code> de cada PR a partir das datas.</li>
   <li>Agregar por agente para RQ1 e RQ2.</li>
@@ -310,9 +332,29 @@ contribuição que se correlacionam com qualidade.
   <li>Para o esforço de revisão, ligar revisões e comentários ao PR via <code>pr_id</code>
       / <code>pull_request_review_id</code>.</li>
 </ol>
+<p><strong>RQ5 — qualidade estática</strong> (<code>static_analysis.py</code>):</p>
+<ol start="6">
+  <li>Extrair as linhas adicionadas (diffs/patches) de cada PR mesclado.</li>
+  <li>Rodar o <em>linter</em> <code>ruff</code> (<code>--select=ALL</code>) sobre os fragmentos e
+      medir a complexidade ciclomática com <code>lizard</code>.</li>
+  <li>Agregar por agente como densidade de <em>warnings</em> (por 100 linhas) e
+      complexidade média.</li>
+</ol>
+<p><strong>RQ6 — qualidade dinâmica / testabilidade</strong>
+   (<code>sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
+<ol start="9">
+  <li>Selecionar uma amostra estratificada de PRs mesclados que tragam código <em>e</em>
+      testes em Python (passo minerável).</li>
+  <li>Para cada PR: clonar o repo no <code>head_sha</code>, reconstruir o ambiente e
+      executar a suíte.</li>
+  <li>Medir a cobertura das linhas adicionadas (<code>pytest-cov</code>) e o
+      <em>mutation score</em> (<code>cosmic-ray</code>).</li>
+</ol>
 <p>
-A análise é totalmente reproduzível pelo script <code>quality_analysis.py</code>
-(ver §9), escrito em Python com <code>pandas</code>.
+A análise é reproduzível pelos scripts <code>quality_analysis.py</code> (RQ1–RQ4),
+<code>static_analysis.py</code> (RQ5) e <code>sample_for_testing.py</code> +
+<code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
+<code>pandas</code>.
 </p>
 </section>
 
@@ -321,12 +363,12 @@ A análise é totalmente reproduzível pelo script <code>quality_analysis.py</co
 <h2>6. Resultados e discussão</h2>
 <p>
 Os resultados abaixo foram gerados sobre a versão completa do AIDev
-(<code>all_pull_request.parquet</code>) e o subset AIDev-pop, em 22/06/2026. Para
-facilitar a leitura, cada questão de pesquisa traz, junto, o <strong>resultado</strong>
-e a sua <strong>interpretação</strong>. As RQ1–RQ4 medem a qualidade
-<em>percebida</em> (o que os mantenedores aceitam e quanto revisam); a RQ5 começa a
-medir a qualidade <em>intrínseca</em> (o que está no código). A leitura conjunta é
-mais informativa que cada RQ isolada.
+(<code>all_pull_request.parquet</code>) e o subset AIDev-pop (<code>pull_request.parquet</code>), em 22/06/2026. As RQ1–RQ4 medem a qualidade
+<em>percebida</em> (o que os mantenedores aceitam e quanto revisam); a RQ5 mede a
+qualidade <em>estática/intrínseca</em> (o que está no código, sem executá-lo); e a
+RQ6 mede a qualidade <em>dinâmica/testabilidade</em> (cobertura e <em>mutation
+score</em> da suíte de testes). A leitura conjunta é mais informativa que cada RQ
+isolada.
 </p>
 
 <h3>6.1 <span class="rq">RQ1</span> Aceitação e rejeição por agente</h3>
@@ -571,6 +613,34 @@ inteiro) para economizar tempo e disco.
   (limitação inerente a estudos dinâmicos de mineração).
 </div>
 
+<div class="box alerta">
+  <h4>Por que muitos repositórios falham — e como o runner lida com isso</h4>
+  Reconstruir e rodar a suíte de um projeto arbitrário é frágil; numa primeira
+  execução, foi comum o status <code>tests_failed</code> (o <code>pytest</code> nem
+  chegou a rodar). As causas mais frequentes:
+  <ul>
+    <li><strong>Dependências de teste ausentes</strong> — a causa principal: elas
+        costumam ficar em <em>extras</em> (<code>.[test]</code>/<code>.[dev]</code>)
+        ou em <code>requirements-dev.txt</code>/<code>requirements-test.txt</code>,
+        não no install padrão.</li>
+    <li><strong>Serviços/ambiente</strong> — banco de dados, rede, chaves de API,
+        variáveis de ambiente que o teste pressupõe.</li>
+    <li><strong>Build</strong> — extensões C, assets compilados, etapas de
+        <code>make</code>/node.</li>
+    <li><strong>Versão de Python</strong> incompatível com o venv usado.</li>
+  </ul>
+  <strong>Mitigações implementadas no runner:</strong> (a) cada PR roda num
+  <em>venv isolado</em>; (b) além do <code>pip install -e .</code>, tentam-se os
+  <em>extras</em> de teste e os arquivos <code>requirements-dev/test</code>;
+  (c) tratamento de erro <em>por etapa</em> (clone → instalação → testes), com o
+  status registrado; (d) o <strong>log do <code>pytest</code> de cada PR</strong> é
+  salvo em <code>outputs/rq6_logs/</code>, permitindo diagnosticar exatamente o que
+  faltou. Ainda assim, parte falha — é inerente a estudos dinâmicos; por isso o
+  <em>n</em> efetivo é menor que a amostra e o status por etapa é reportado para
+  transparência. (Detalhe de plataforma: a mutação usa <code>cosmic-ray</code>
+  porque o <code>mutmut</code> não roda nativo no Windows.)
+</div>
+
 <div class="box destaque">
   <h4>Síntese: quatro níveis de evidência</h4>
   Juntando todas as RQs: (1) há uma <strong>hierarquia de aceitação</strong> estável
@@ -603,9 +673,26 @@ entre agentes é válida.
 <h3>Validade interna</h3>
 <p>
 Os volumes são desbalanceados (814 mil PRs do Codex vs. 5 mil do Claude Code), e a
-composição de tarefas difere entre agentes. Comparações diretas de médias podem
-enganar; por isso o controle por tipo de tarefa (RQ4) e, idealmente, testes
-estatísticos e modelos de regressão são recomendados.
+composição de tarefas difere entre agentes. Isso ameaça a comparação de três formas:
+(a) <strong>confiança desigual</strong> — a taxa de merge do Codex tem intervalo de
+confiança estreitíssimo, enquanto a do Claude Code é bem mais incerta, de modo que
+comparar as médias como se tivessem a mesma precisão engana; (b) <strong>confundimento
+com recência</strong> — o volume do Codex está concentrado numa janela de ~2,5 meses
+(§3), então parte da diferença entre agentes pode refletir <em>quando/onde</em> cada um
+atuou, não a qualidade do código; (c) <strong>mix de tarefas</strong> — um agente que
+abre proporcionalmente mais <code>docs</code> (fáceis de aceitar) parece melhor só pela
+composição.
+</p>
+<p>
+<strong>Mitigações.</strong> Controlamos pelo tipo de tarefa (RQ4) e usamos amostragem
+<em>estratificada por agente</em> (RQ5/RQ6) para dar voz aos agentes menores. Como
+continuação, recomendam-se: <strong>intervalos de confiança</strong> (Wilson) ou testes
+de proporção em cada taxa, para tornar a incerteza desigual explícita; um
+<strong>recorte temporal comum</strong> (apenas PRs decididos numa janela em que todos
+os agentes coexistem), para neutralizar a recência; e uma <strong>regressão
+logística</strong> (<code>merge ~ agente + tipo + tempo + repositório</code>), que
+isola o efeito do agente controlando simultaneamente tarefa, recência e projeto —
+sendo esta a mitigação mais forte (ver §8).
 </p>
 <p>
 <strong>PRs em aberto e viés de recência.</strong> A taxa de merge é calculada sobre
@@ -620,9 +707,20 @@ o tempo até a decisão controlaria esse viés.
 aleatória de ~1,8 mil arquivos Python, com poucos do Claude Code (113). A amostra
 pode não representar o todo; rodar no dataset inteiro é trabalho pendente (§8).
 </p>
+<p>
+<strong>Atrito de execução na RQ6.</strong> Os testes dinâmicos só rodam nos repos
+que clonam, instalam e executam a suíte com sucesso. Numa primeira execução, a
+maioria falhou em <code>tests_failed</code> (deps de teste ausentes, serviços, build
+ou versão de Python — ver §6.6). Mesmo com as mitigações do runner (instalar extras
+de teste, venv isolado, logs por PR), o <em>n</em> efetivo é menor que a amostra e
+provavelmente <strong>enviesado</strong> para projetos mais fáceis de instalar — o
+que pode não ser aleatório em relação à qualidade. A tese reporta a taxa de sucesso
+e trata os resultados como exploratórios.
+</p>
 <h3>Validade externa</h3>
 <p>
-O dataset cobre até agosto de 2025 e apenas projetos públicos do GitHub. Resultados
+O dataset cobre de dezembro de 2024 a julho de 2025 e apenas projetos públicos do
+GitHub. Resultados
 podem não generalizar para código privado/corporativo ou para versões mais novas
 dos agentes. A RQ5, em especial, cobre <strong>apenas Python</strong> (linguagem com
 melhor suporte de linter), então seus achados não se estendem automaticamente a
@@ -662,9 +760,14 @@ em volta.
       adicionadas/removidas e número de arquivos com a chance de aceitação.</li>
   <li><strong>Tempo de turnaround</strong>: medir <code>merged_at − created_at</code>
       como proxy de velocidade/atrito.</li>
-  <li><strong>Modelagem estatística</strong>: regressão logística da probabilidade
-      de merge controlando por agente, tipo de tarefa, tamanho e popularidade do
-      repositório.</li>
+  <li><strong>Modelagem estatística</strong>: reportar <strong>intervalos de
+      confiança</strong> (Wilson) nas taxas de merge para expor a incerteza desigual
+      entre agentes com volumes muito diferentes; aplicar um <strong>recorte temporal
+      comum</strong> (apenas PRs decididos numa janela em que todos os agentes
+      coexistem) para neutralizar o viés de recência; e ajustar uma <strong>regressão
+      logística</strong> da probabilidade de merge controlando por agente, tipo de
+      tarefa, recência, tamanho e popularidade do repositório (mitigações para o
+      desbalanceamento discutido na §7).</li>
   <li><strong>Análise qualitativa</strong>: amostrar comentários de revisão e
       categorizar os tipos de problema apontados (bug, estilo, segurança…).</li>
 </ul>
@@ -804,7 +907,7 @@ A RQ5 analisa por padrão uma amostra de arquivos <code>.py</code>
   Guia gerado como material de apoio à dissertação de mestrado de Ruth Maria.
   Dados: dataset AIDev (CC-BY-4.0); cada repositório de origem mantém sua licença
   original. Resultados computados em 22/06/2026 a partir da versão do AIDev com
-  dados até agosto de 2025.
+  dados de dezembro de 2024 a julho de 2025.
 </footer>
 
 </main>

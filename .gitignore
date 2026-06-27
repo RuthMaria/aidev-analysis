@@ -4,6 +4,7 @@
 # Saidas geradas
 *.png
 *.csv
+rq6_logs
 # Python
 __pycache__/
 *.pyc

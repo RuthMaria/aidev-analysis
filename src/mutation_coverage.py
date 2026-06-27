@@ -48,6 +48,7 @@ SKIP_MUTATION = bool(os.environ.get("AIDEV_SKIP_MUTATION"))      # pular mutaç�
 
 SAMPLE_CSV = OUTPUT_DIR / "test_sample.csv"                      # entrada (passo 1)
 RESULTS_CSV = OUTPUT_DIR / "rq6_results.csv"                     # saída por PR
+LOGS_DIR = OUTPUT_DIR / "rq6_logs"                               # logs do pytest por PR
 
 # Caminho do python dentro de um venv difere entre Windows e Unix.
 VENV_PY = "Scripts/python.exe" if os.name == "nt" else "bin/python"
@@ -104,13 +105,15 @@ def added_lines_by_file(pr_id, commits):
     return out                                                 # mapa final
 
 
-def patch_coverage(repo_dir, venv_py, added_map):
+def patch_coverage(repo_dir, venv_py, added_map, log_path):
     """Cobertura SÓ das linhas adicionadas (patch coverage) -> (cobertas, total)."""
     cov_json = repo_dir / "cov.json"                           # arquivo de saída
     # Roda a suíte com cobertura, exportando o relatório em JSON.
-    ok, _ = run([str(venv_py), "-m", "pytest", "-q",           # pytest silencioso
-                 "--cov", "--cov-report", f"json:{cov_json}"], # relatório JSON
-                cwd=repo_dir, timeout=900)                     # teto de 15 min
+    ok, out = run([str(venv_py), "-m", "pytest", "-q",         # pytest silencioso
+                   "--cov", "--cov-report", f"json:{cov_json}"], # relatório JSON
+                  cwd=repo_dir, timeout=900)                   # teto de 15 min
+    # Salva o log do pytest p/ diagnóstico (mostra POR QUE falhou, se falhar).
+    log_path.write_text(out, encoding="utf-8", errors="replace")
     if not cov_json.exists():                                  # sem relatório?
         return None                                            # cobertura indisponível
     data = json.loads(cov_json.read_text(encoding="utf-8"))    # lê o JSON
@@ -132,12 +135,14 @@ def patch_coverage(repo_dir, venv_py, added_map):
     return covered, total                                      # (cobertas, total)
 
 
-def mutation_score(repo_dir, venv_py, code_files):
+def mutation_score(repo_dir, venv_py, code_files, log_path):
     """Mutation score dos arquivos do agente -> (mortos, sobreviventes)."""
     killed = survived = 0                                       # acumuladores
+    logbuf = []                                                 # diagnóstico do cosmic-ray
     for fname in code_files[:MUT_MAX_FILES]:                    # limita p/ caber no tempo
         target = repo_dir / fname                               # arquivo a mutar
         if not target.exists():                                 # arquivo ausente?
+            logbuf.append(f"### {fname}: arquivo não encontrado no checkout")
             continue
         cfg = repo_dir / "cr.toml"                              # config do cosmic-ray
         session = repo_dir / "cr.sqlite"                        # sessão (resultados)
@@ -149,36 +154,65 @@ def mutation_score(repo_dir, venv_py, code_files):
             f'module-path = "{fname}"\n'                        # só este arquivo
             f"timeout = {MUT_TIMEOUT}\n"                        # timeout por mutante
             "excluded-modules = []\n"
-            f'test-command = "{venv_py} -m pytest -x -q"\n'     # roda a suíte
+            # as_posix() usa barras '/': em TOML, '\' é escape e quebra o caminho no Windows.
+            f'test-command = "{Path(venv_py).as_posix()} -m pytest -x -q"\n'  # roda a suíte
             "\n[cosmic-ray.distributor]\n"
             'name = "local"\n', encoding="utf-8")
         cr = [str(venv_py), "-m", "cosmic_ray.cli"]            # CLI do cosmic-ray
-        run(cr + ["init", str(cfg), str(session)], cwd=repo_dir, timeout=120)   # cria sessão
-        run(cr + ["exec", str(cfg), str(session)], cwd=repo_dir, timeout=3600)  # roda mutantes
+        _, oi = run(cr + ["init", str(cfg), str(session)], cwd=repo_dir, timeout=120)   # cria sessão
+        _, oe = run(cr + ["exec", str(cfg), str(session)], cwd=repo_dir, timeout=3600)  # roda mutantes
         ok, dump = run(cr + ["dump", str(session)], cwd=repo_dir, timeout=120)  # extrai resultados
+        # Guarda a cauda da saída p/ diagnóstico (init costuma falhar se não houver mutações).
+        logbuf.append(f"### {fname}\n[init]\n{oi[-400:]}\n[exec]\n{oe[-1000:]}")
         if not ok:                                             # falhou o dump?
             continue
-        for line in dump.splitlines():                         # cada item = 1 mutante
+        for line in dump.splitlines():                         # cada linha = 1 mutante
             line = line.strip()
             if not line:
                 continue
             try:
-                rec = json.loads(line)                         # [job, result]
+                rec = json.loads(line)                         # formato: [job, result]
             except json.JSONDecodeError:
                 continue
-            outcome = json.dumps(rec)                          # texto p/ checar o desfecho
-            if '"KILLED"' in outcome:                          # teste matou o mutante
+            # O desfecho fica em result["test_outcome"], em MINÚSCULAS.
+            result = rec[1] if isinstance(rec, list) and len(rec) > 1 else {}
+            outcome = result.get("test_outcome") if isinstance(result, dict) else None
+            if outcome == "killed":                            # teste matou o mutante
                 killed += 1
-            elif '"SURVIVED"' in outcome:                      # mutante sobreviveu
+            elif outcome == "survived":                        # mutante sobreviveu
                 survived += 1
+    # Salva o diagnóstico do cosmic-ray (resumo + caudas de init/exec).
+    log_path.write_text(f"killed={killed} survived={survived}\n\n" + "\n".join(logbuf),
+                        encoding="utf-8", errors="replace")
     return killed, survived                                    # (mortos, sobreviventes)
+
+
+def install_project(venv_py, repo_dir):
+    """Instala o projeto e, se houver, suas dependências de TESTE.
+
+    A maioria das falhas de 'tests_failed' vem de deps de teste ausentes: elas
+    costumam ficar em extras (.[test]/.[dev]) ou num requirements-dev/test — não
+    no install padrão. Tentamos todos; o que não existir falha em silêncio.
+    """
+    pip = [str(venv_py), "-m", "pip", "install", "-q"]
+    run(pip + ["-e", "."], cwd=repo_dir, timeout=1800)         # projeto (editable)
+    for extra in ("test", "tests", "testing", "dev"):          # extras comuns de teste
+        run(pip + ["-e", f".[{extra}]"], cwd=repo_dir, timeout=1800)
+    for req in ("requirements.txt", "requirements-dev.txt",    # arquivos de requirements
+                "requirements-test.txt", "test-requirements.txt",
+                "dev-requirements.txt"):
+        if (repo_dir / req).exists():                          # só se o arquivo existir
+            run(pip + ["-r", req], cwd=repo_dir, timeout=1800)
+    # Ferramentas de teste no MESMO venv (para enxergar as deps do projeto).
+    ok, _ = run(pip + ["pytest", "pytest-cov", "cosmic-ray"], timeout=600)
+    return ok                                                  # ok = ferramentas instaladas
 
 
 def process_pr(row, commits, workdir):
     """Processa um PR: clona, instala, mede cobertura e mutação. Devolve dict."""
     res = {"agent": row["agent"], "repo": clone_url(row["repo_url"]),  # base do resultado
            "pr_number": row["pr_number"], "status": "ok",
-           "patch_cov": None, "mut_score": None}
+           "patch_cov": None, "mut_score": None, "reason": None}
     repo_dir = Path(workdir) / f"pr_{row['pr_id']}"            # pasta deste PR
     repo_dir.mkdir(parents=True, exist_ok=True)
     sha = row["head_sha"]                                      # commit a reconstruir
@@ -198,24 +232,18 @@ def process_pr(row, commits, workdir):
     run([sys.executable, "-m", "venv", str(repo_dir / ".venv")], timeout=120)
     venv_py = repo_dir / ".venv" / VENV_PY                     # python do venv
     run([str(venv_py), "-m", "pip", "install", "-q", "-U", "pip"], timeout=300)
-    # Tenta instalar o projeto (editable); se não houver setup, usa requirements.
-    ok, _ = run([str(venv_py), "-m", "pip", "install", "-q", "-e", "."],
-                cwd=repo_dir, timeout=1200)
-    if not ok:
-        run([str(venv_py), "-m", "pip", "install", "-q", "-r", "requirements.txt"],
-            cwd=repo_dir, timeout=1200)
-    # Ferramentas de teste no MESMO venv (para enxergar as deps do projeto).
-    ok, _ = run([str(venv_py), "-m", "pip", "install", "-q",
-                 "pytest", "pytest-cov", "cosmic-ray"], timeout=600)
-    if not ok:
+    # Instala o projeto + deps de teste (extras/requirements).
+    if not install_project(venv_py, repo_dir):
         res["status"] = "install_failed"
         return res
 
     # 3. Cobertura das linhas adicionadas pelo agente.
     added_map = added_lines_by_file(row["pr_id"], commits)     # linhas add. por arquivo
-    cov = patch_coverage(repo_dir, venv_py, added_map)
+    log_path = LOGS_DIR / f"pr_{row['pr_id']}.log"             # log do pytest deste PR
+    cov = patch_coverage(repo_dir, venv_py, added_map, log_path)
     if cov is None:                                            # suíte não rodou
         res["status"] = "tests_failed"
+        res["reason"] = log_path.name                          # aponta o log p/ diagnóstico
         return res
     covered, total = cov
     res["patch_cov"] = round(100 * covered / total, 1) if total else None
@@ -223,7 +251,8 @@ def process_pr(row, commits, workdir):
     # 4. Mutação (opcional, pesada).
     if not SKIP_MUTATION:
         code_files = [f for f in str(row["code_files"]).split(";") if f.endswith(".py")]
-        killed, survived = mutation_score(repo_dir, venv_py, code_files)
+        mut_log = LOGS_DIR / f"pr_{row['pr_id']}_mutation.log"  # diagnóstico do cosmic-ray
+        killed, survived = mutation_score(repo_dir, venv_py, code_files, mut_log)
         if killed + survived:                                 # houve mutantes válidos?
             res["mut_score"] = round(100 * killed / (killed + survived), 1)
     return res
@@ -236,6 +265,7 @@ def main():
     sample = pd.read_csv(SAMPLE_CSV)                           # lê a amostra
     if RUN_LIMIT:                                              # limita nº de PRs?
         sample = sample.head(RUN_LIMIT)
+    LOGS_DIR.mkdir(exist_ok=True)                             # pasta dos logs do pytest
 
     # Carrega os patches só dos PRs da amostra (para a cobertura por linha).
     commits = pd.read_parquet(path("pr_commit_details.parquet"),
@@ -272,6 +302,8 @@ def main():
     # Relatório de status (quantos falharam em cada etapa).
     print("\n[i] status da amostra:")
     print(df["status"].value_counts().to_string())
+    # Onde diagnosticar as falhas de 'tests_failed'.
+    print(f"\n[i] logs do pytest (por que cada PR falhou) em: {LOGS_DIR}")
 
 
 if __name__ == "__main__":

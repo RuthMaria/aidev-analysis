@@ -22,7 +22,7 @@ Uso (Git Bash):
   AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/sample_for_testing.py
 
 A amostra é estratificada por agente e limitada por AIDEV_TEST_SAMPLE
-(padrão 40; use 0 para exportar todos os candidatos).
+(padrão 25 = 5 por agente; use 0 para exportar todos os candidatos).
 """
 
 import os                      # lê variáveis de ambiente (AIDEV_DATA, AIDEV_TEST_SAMPLE)
@@ -37,7 +37,8 @@ from quality_analysis import path, OUTPUT_DIR
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # Tamanho da amostra final (estratificada por agente). 0 = todos os candidatos.
-SAMPLE = int(os.environ.get("AIDEV_TEST_SAMPLE", "40"))
+# Padrão 25 (5 por agente), igual ao documentado no guia (§6.6).
+SAMPLE = int(os.environ.get("AIDEV_TEST_SAMPLE", "25"))
 
 # Regex que reconhece arquivos de TESTE pelas convenções comuns em Python:
 #   - pasta tests/ ou test/ ou __tests__/      -> (^|/)(tests?|__tests__)/
