@@ -323,7 +323,7 @@ contribuição que se correlacionam com qualidade.
 </div>
 
 <h3>5.3 Procedimento de análise</h3>
-<p><strong>RQ1–RQ4 — qualidade percebida</strong> (<code>RQ1_a_RQ4_quality_analysis.py</code>):</p>
+<p><strong>RQ1–RQ4 — qualidade percebida</strong> (<code>RQ1_to_RQ4_quality_analysis.py</code>):</p>
 <ol>
   <li>Derivar <code>merged</code> e <code>rejected</code> de cada PR a partir das datas.</li>
   <li>Agregar por agente para RQ1 e RQ2.</li>
@@ -351,7 +351,7 @@ contribuição que se correlacionam com qualidade.
       <em>mutation score</em> (<code>cosmic-ray</code>).</li>
 </ol>
 <p>
-A análise é reproduzível pelos scripts <code>RQ1_a_RQ4_quality_analysis.py</code> (RQ1–RQ4),
+A análise é reproduzível pelos scripts <code>RQ1_to_RQ4_quality_analysis.py</code> (RQ1–RQ4),
 <code>static_analysis.py</code> (RQ5) e <code>sample_for_testing.py</code> +
 <code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
 <code>pandas</code>.
@@ -900,7 +900,7 @@ pip install -r requirements.txt
 python src/explore.py
 
 # 3. Gerar as métricas de qualidade RQ1-RQ4 (tabelas + gráficos PNG)
-python src/RQ1_a_RQ4_quality_analysis.py
+python src/RQ1_to_RQ4_quality_analysis.py
 
 # 4. Rodar a análise estática RQ5 (amostra de arquivos Python)
 python src/static_analysis.py
@@ -918,7 +918,7 @@ Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local d
 </p>
 <pre><code># PowerShell (Windows)
 $env:AIDEV_DATA = "C:\Users\Ruth\Downloads\aidev"
-python src/RQ1_a_RQ4_quality_analysis.py</code></pre>
+python src/RQ1_to_RQ4_quality_analysis.py</code></pre>
 <p>
 A RQ5 analisa por padrão uma amostra de arquivos <code>.py</code>
 (<code>AIDEV_RQ5_SAMPLE</code>, padrão 5000) para ser rápida; use

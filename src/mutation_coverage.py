@@ -36,7 +36,7 @@ from pathlib import Path        # manipular caminhos de forma portável
 
 import pandas as pd            # ler o CSV da amostra e o pr_commit_details
 
-from RQ1_a_RQ4_quality_analysis import path, OUTPUT_DIR   # reaproveita caminho dos dados/saída
+from RQ1_to_RQ4_quality_analysis import path, OUTPUT_DIR   # reaproveita caminho dos dados/saída
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # evita erro de cp1252
 

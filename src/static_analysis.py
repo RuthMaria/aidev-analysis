@@ -37,7 +37,7 @@ import pandas as pd
 import lizard
 
 # Reaproveita a infraestrutura já pronta da RQ1-RQ4 (mesma pasta src/).
-from RQ1_a_RQ4_quality_analysis import path, OUTPUT_DIR, load_prs, bar_chart
+from RQ1_to_RQ4_quality_analysis import path, OUTPUT_DIR, load_prs, bar_chart
 
 # Quantos arquivos .py analisar. 0 = todos (lento). Padrão = amostra.
 SAMPLE = int(os.environ.get("AIDEV_RQ5_SAMPLE", "5000"))
