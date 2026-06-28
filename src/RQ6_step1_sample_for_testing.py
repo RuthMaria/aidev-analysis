@@ -14,7 +14,7 @@ Critérios de inclusão (framing B - quão bem-testado é o código do agente):
   - que adiciona ao menos 1 arquivo .py de CÓDIGO (algo para cobrir/mutar); e
   - ao menos 1 arquivo .py de TESTE (indício de que a suíte existe).
 
-Saída: outputs/RQ6_test_sample.csv com uma linha por PR selecionado:
+Saída: outputs/RQ6_step1_test_sample.csv com uma linha por PR selecionado:
   agent, repo_url, pr_number, html_url, pr_id, head_sha,
   n_code_files, n_test_files, added_code_loc, code_files, test_files
 
@@ -132,7 +132,7 @@ def main():
             "code_files", "test_files"]
     cand = cand[cols].sort_values(["agent", "pr_number"])      # reordena linhas e colunas
 
-    out = OUTPUT_DIR / "RQ6_test_sample.csv"                   # caminho do arquivo de saída
+    out = OUTPUT_DIR / "RQ6_step1_test_sample.csv"                   # caminho do arquivo de saída
     cand.to_csv(out, index=False, encoding="utf-8")           # grava o CSV
     print(f"\n -> Amostra final: {len(cand)} PRs -> {out}\n")    # confirma onde salvou
     print(cand[["agent", "repo_url", "pr_number", "n_code_files",  # prévia da amostra

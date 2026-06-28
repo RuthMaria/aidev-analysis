@@ -2,7 +2,7 @@ r"""
 RQ6_step2_mutation_and_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO do código dos
 agentes sobre a amostra selecionada por RQ6_step1_sample_for_testing.py.
 
-Para cada PR da amostra (outputs/RQ6_test_sample.csv) o runner:
+Para cada PR da amostra (outputs/RQ6_step1_test_sample.csv) o runner:
   1. converte a URL da API do GitHub para URL de clone;
   2. clona só o commit do PR (head_sha) e dá checkout;
   3. cria um venv isolado e instala o projeto + ferramentas de teste;
@@ -46,7 +46,7 @@ MUT_MAX_FILES = int(os.environ.get("AIDEV_MUT_MAX_FILES", "3"))  # limita mutaç
 MUT_TIMEOUT = float(os.environ.get("AIDEV_MUT_TIMEOUT", "30"))   # s por mutante
 SKIP_MUTATION = bool(os.environ.get("AIDEV_SKIP_MUTATION"))      # pular mutação?
 
-SAMPLE_CSV = OUTPUT_DIR / "RQ6_test_sample.csv"                  # entrada (passo 1)
+SAMPLE_CSV = OUTPUT_DIR / "RQ6_step1_test_sample.csv"                  # entrada (passo 1)
 RESULTS_CSV = OUTPUT_DIR / "RQ6_results.csv"                     # saída por PR
 LOGS_DIR = OUTPUT_DIR / "rq6_logs"                               # logs do pytest por PR
 
