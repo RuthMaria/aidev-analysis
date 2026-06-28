@@ -47,7 +47,7 @@ MUT_TIMEOUT = float(os.environ.get("AIDEV_MUT_TIMEOUT", "30"))   # s por mutante
 SKIP_MUTATION = bool(os.environ.get("AIDEV_SKIP_MUTATION"))      # pular mutação?
 
 SAMPLE_CSV = OUTPUT_DIR / "RQ6_step1_test_sample.csv"                  # entrada (passo 1)
-RESULTS_CSV = OUTPUT_DIR / "RQ6_results.csv"                     # saída por PR
+RESULTS_CSV = OUTPUT_DIR / "RQ6_step2_results.csv"              # saída por PR
 LOGS_DIR = OUTPUT_DIR / "rq6_logs"                               # logs do pytest por PR
 
 # Caminho do python dentro de um venv difere entre Windows e Unix.
