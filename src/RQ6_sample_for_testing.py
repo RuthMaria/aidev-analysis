@@ -1,5 +1,5 @@
 r"""
-sample_for_testing.py - RQ6 (passo 1): seleciona a amostra de PRs para os
+RQ6_sample_for_testing.py - RQ6 (passo 1): seleciona a amostra de PRs para os
 testes dinâmicos (cobertura + mutação).
 
 Cobertura e teste de mutação precisam EXECUTAR a suíte de testes em um repo
@@ -14,12 +14,12 @@ Critérios de inclusão (framing B - quão bem-testado é o código do agente):
   - que adiciona ao menos 1 arquivo .py de CÓDIGO (algo para cobrir/mutar); e
   - ao menos 1 arquivo .py de TESTE (indício de que a suíte existe).
 
-Saída: outputs/test_sample.csv com uma linha por PR selecionado:
+Saída: outputs/RQ6_test_sample.csv com uma linha por PR selecionado:
   agent, repo_url, pr_number, html_url, pr_id, head_sha,
   n_code_files, n_test_files, added_code_loc, code_files, test_files
 
 Uso (Git Bash):
-  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/sample_for_testing.py
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ6_sample_for_testing.py
 
 A amostra é estratificada por agente e limitada por AIDEV_TEST_SAMPLE
 (padrão 25 = 5 por agente; use 0 para exportar todos os candidatos).
@@ -132,7 +132,7 @@ def main():
             "code_files", "test_files"]
     cand = cand[cols].sort_values(["agent", "pr_number"])      # reordena linhas e colunas
 
-    out = OUTPUT_DIR / "test_sample.csv"                       # caminho do arquivo de saída
+    out = OUTPUT_DIR / "RQ6_test_sample.csv"                   # caminho do arquivo de saída
     cand.to_csv(out, index=False, encoding="utf-8")           # grava o CSV
     print(f"\n[i] amostra final: {len(cand)} PRs -> {out}")    # confirma onde salvou
     print(cand[["agent", "repo_url", "pr_number", "n_code_files",  # prévia da amostra

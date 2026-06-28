@@ -341,7 +341,7 @@ contribuição que se correlacionam com qualidade.
       complexidade média.</li>
 </ol>
 <p><strong>RQ6 — qualidade dinâmica / testabilidade</strong>
-   (<code>sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
+   (<code>RQ6_sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
 <ol start="9">
   <li>Selecionar uma amostra estratificada de PRs mesclados que tragam código <em>e</em>
       testes em Python (passo minerável).</li>
@@ -352,7 +352,7 @@ contribuição que se correlacionam com qualidade.
 </ol>
 <p>
 A análise é reproduzível pelos scripts <code>RQ1_to_RQ4_perceived_quality.py</code> (RQ1–RQ4),
-<code>RQ5_static_quality.py</code> (RQ5) e <code>sample_for_testing.py</code> +
+<code>RQ5_static_quality.py</code> (RQ5) e <code>RQ6_sample_for_testing.py</code> +
 <code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
 <code>pandas</code>.
 </p>
@@ -408,16 +408,37 @@ merge: note que a faixa do Codex é estreitíssima (±0,1 pp, n=814k) e a do Cla
 <div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track"><div class="bar-fill" style="width:64.4%">64,4%</div></div></div>
 <div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill" style="width:59.1%">59,1%</div></div></div>
 <p>
-<strong>Discussão.</strong> A taxa de merge separa nitidamente os agentes: Codex
-lidera com folga, seguido por Claude Code e Cursor; Devin e Copilot ficam atrás.
-Mas "não mesclado" não é a mesma coisa que "rejeitado": a coluna <em>% em aberto</em>
-torna explícita uma terceira categoria — PRs ainda sem decisão. E ela é muito
-desigual: <strong>Cursor (21,4%) e Copilot (20,3%)</strong> deixam cerca de um quinto
-dos PRs em aberto, contra apenas ~6–8% de Codex, Devin e Claude Code. Isso muda a
-leitura da rejeição: o <strong>Devin</strong> tem a maior rejeição <em>explícita</em>
-(29,9%) — uma recusa ativa —, enquanto a "baixa aceitação" do Cursor se deve em boa
-parte a PRs indecisos, não a recusas. Distinguir <em>recusa</em> de <em>abandono</em>
-é essencial para não confundir os dois.
+<strong>Discussão.</strong> O primeiro fato é a <strong>magnitude da dispersão</strong>:
+a taxa de aceitação varia de <strong>59,1% (Copilot) a 87,7% (Codex)</strong> — quase
+<strong>29 pontos percentuais</strong> de diferença. Os agentes <em>não</em> são
+intercambiáveis em qualidade percebida; a escolha da ferramenta importa. Como os
+intervalos de confiança de Wilson não se sobrepõem (tabela acima), essa ordenação é
+estatisticamente robusta, não artefato amostral.
+</p>
+<p>
+Mas a taxa de merge sozinha esconde a estrutura da decisão. "Não mesclado" não é
+sinônimo de "rejeitado": a coluna <em>% em aberto</em> revela uma terceira categoria —
+PRs ainda <em>sem decisão</em> —, e ela é muito desigual. <strong>Cursor (21,4%) e
+Copilot (20,3%)</strong> deixam cerca de um quinto dos PRs pendentes, contra apenas
+~6–8% de Codex, Devin e Claude Code. Isso obriga a <strong>separar recusa de
+abandono</strong>: o <strong>Devin</strong> tem a maior rejeição <em>explícita</em>
+(29,9% — quase 1 em 3 PRs recusados ativamente), apesar de quase não deixar PRs em
+aberto (5,6%); seus PRs são decididos rápido e muitas vezes negativamente. O
+<strong>Cursor</strong>, ao contrário, quase não é recusado (8,0%) — sua baixa
+aceitação vem sobretudo de PRs que <em>ficam pendentes</em>, não de rejeições. Já o
+<strong>Copilot</strong> é o pior nas duas frentes ao mesmo tempo (20,7% rejeitados
+<em>e</em> 20,3% em aberto), o que sustenta sua última posição em aceitação.
+</p>
+<p>
+Duas ressalvas de interpretação. Primeira, <strong>aceitação é um proxy de qualidade
+<em>percebida</em>, não de corretude</strong>: mede o que o mantenedor decidiu, não se
+o código está certo — e a RQ5 mostra que as duas dimensões divergem (o Copilot, menos
+aceito, escreve o código estaticamente mais limpo). Segunda, a liderança do
+<strong>Codex</strong> deve ser lida com cautela: seus 814 mil PRs estão concentrados
+numa janela de ~2,5 meses (ver §3), de modo que parte da vantagem pode refletir
+<em>quando/onde</em> ele atuou, não só a qualidade — confundimento que a RQ3 (controle
+por tipo de tarefa) ajuda a atenuar, ao mostrar que a aceitação de todos os agentes
+cai nas tarefas que mexem na lógica do sistema.
 </p>
 
 <h3>6.2 <span class="rq">RQ2</span> Esforço de revisão (AIDev-pop)</h3>
@@ -557,6 +578,25 @@ por 100 linhas adicionadas e a complexidade ciclomática média (<code>lizard</c
     <tr><td>Cursor</td><td class="num">4.077</td><td class="num">25,9</td><td class="num">55,12</td><td class="num">3,81</td></tr>
   </tbody>
 </table>
+<div class="box">
+  <h4>O que significam as duas métricas</h4>
+  <p><strong>Warnings/100 linhas.</strong> Um <em>warning</em> é cada apontamento do
+  <em>linter</em> (<code>ruff</code>): import não usado, linha longa, falta de docstring
+  ou de anotação de tipo, etc. Normalizamos pelo tamanho —
+  <code>(total de warnings ÷ linhas que compilam) × 100</code> —, então <strong>30,08
+  (Copilot) = ~30 avisos a cada 100 linhas</strong>, ou ~1 a cada 3 linhas. Menor é
+  mais limpo. Como a regra <code>ALL</code> é severa e infla o valor absoluto, o que
+  vale é a <em>comparação relativa</em> (30 do Copilot &lt; 55 do Cursor), não o número
+  isolado.</p>
+  <p><strong>Complexidade média.</strong> É a <em>complexidade ciclomática</em> média
+  das funções: o número de caminhos de decisão, calculado como
+  <code>1 + (nº de if, for, while, and, or, except…)</code>. Uma função sem desvios tem
+  complexidade 1; cada <code>if</code>/laço soma 1. Logo <strong>2,99 (Copilot) = cada
+  função tem, em média, ~2 pontos de decisão</strong>. Regra de bolso: 1–5 é simples e
+  fácil de testar, 6–10 moderada, &gt;10 arriscada. Todos os agentes ficam entre 2,4 e
+  3,8 — funções <strong>simples</strong> em média. Ambas as métricas são sinais de
+  <em>superfície</em> (estilo e estrutura), <strong>não de corretude</strong>.</p>
+</div>
 <p>Densidade de <em>warnings</em> por 100 linhas (quanto <strong>menor</strong>, mais limpo):</p>
 <div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track"><div class="bar-fill destaque" style="width:30.08%">30,08</div></div></div>
 <div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:36.76%">36,76</div></div></div>
@@ -612,6 +652,40 @@ por 100 linhas adicionadas e a complexidade ciclomática média (<code>lizard</c
   resolvidos com <em>timeout</em>) e arquivos gigantes (<em>guard</em> de tamanho),
   outliers que não afetam as médias.
 </div>
+<p>
+<strong>Discussão.</strong> O resultado central da RQ5 é que a <strong>qualidade
+estática não acompanha a aceitação</strong> (RQ1). O <strong>Copilot</strong>, o agente
+<em>menos</em> aceito (59,1% de merge), escreve o código com a <em>menor</em> densidade
+de warnings (30,1 por 100 linhas); o <strong>Codex</strong>, o mais aceito, também é
+limpo, mas o <strong>Cursor</strong> — que tem aceitação intermediária — é o que mais
+acumula avisos (55,1). Não há, portanto, relação monotônica entre o que o mantenedor
+aceita e o quão limpo é o código: a taxa de merge mede <em>aprovação social</em>, não
+higiene intrínseca. Isso valida a estratégia multi-proxy da tese — RQ1 e RQ5 são
+<strong>complementares, não redundantes</strong>.
+</p>
+<p>
+As duas métricas estáticas contam histórias parcialmente distintas, e ler as duas
+junto é mais informativo. O <strong>Cursor</strong> é o pior nas <em>duas</em>
+dimensões (mais warnings <em>e</em> maior complexidade ciclomática, 3,81) — um sinal
+consistente de menor qualidade estática. Já o <strong>Codex</strong> é o mais limpo
+estruturalmente (complexidade 2,44, a menor) e o segundo em <em>lint</em>: código
+simples e padronizado. O <strong>Copilot</strong> ilustra que as métricas não são
+intercambiáveis: tem a menor densidade de warnings (estilo impecável), mas
+complexidade apenas mediana (2,99), maior que a de Codex e Devin — código de estilo
+limpo, porém não necessariamente o mais simples. As diferenças pequenas no meio da
+tabela (Claude 43,6 vs. Devin 44,5) devem ser lidas como <em>empate</em>, dado o
+caráter severo da regra <code>ALL</code>; o que é robusto são os <em>extremos</em>
+(Copilot/Codex limpos, Cursor o mais ruidoso).
+</p>
+<p>
+Duas qualificações situam o achado. Primeira, as métricas valem sobre os ~39% de
+fragmentos que compilam (ver caixas acima): são sinais de <em>superfície</em>
+(estilo, estrutura), não de corretude — um código pode ser limpo e logicamente errado,
+ou cheio de avisos e funcionalmente correto. Segunda, a RQ5 fecha a leitura de
+qualidade <em>sem executar</em> o código; a pergunta que falta — <em>esse código está
+protegido por testes eficazes?</em> — é justamente o que a <strong>RQ6</strong>
+(cobertura e mutação) ataca a seguir, completando o arco do estático ao dinâmico.
+</p>
 
 <h3>6.6 <span class="rq">RQ6</span> O código dos agentes é bem testado? — cobertura e mutação (metodologia)</h3>
 <p>
@@ -668,7 +742,7 @@ o que cobertura e mutação vão verificar.
 </div>
 
 <p><strong>Critérios da amostra</strong> (e o porquê de cada um), gerada por
-<code>src/sample_for_testing.py</code>:</p>
+<code>src/RQ6_sample_for_testing.py</code>:</p>
 <table>
   <thead><tr><th>Critério</th><th>Por quê</th></tr></thead>
   <tbody>
@@ -941,7 +1015,7 @@ python src/RQ1_to_RQ4_perceived_quality.py
 AIDEV_RQ5_SAMPLE=0 python src/RQ5_static_quality.py
 
 # 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
-python src/sample_for_testing.py            # gera outputs/test_sample.csv
+python src/RQ6_sample_for_testing.py        # gera outputs/RQ6_test_sample.csv
 
 # 6. RQ6: rodar cobertura + mutação sobre a amostra (PESADO: clona e instala repos)
 python src/mutation_coverage.py             # gera outputs/rq6_results.csv

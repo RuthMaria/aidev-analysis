@@ -1,8 +1,8 @@
 r"""
 mutation_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO do código dos
-agentes sobre a amostra selecionada por sample_for_testing.py.
+agentes sobre a amostra selecionada por RQ6_sample_for_testing.py.
 
-Para cada PR da amostra (outputs/test_sample.csv) o runner:
+Para cada PR da amostra (outputs/RQ6_test_sample.csv) o runner:
   1. converte a URL da API do GitHub para URL de clone;
   2. clona só o commit do PR (head_sha) e dá checkout;
   3. cria um venv isolado e instala o projeto + ferramentas de teste;
@@ -46,7 +46,7 @@ MUT_MAX_FILES = int(os.environ.get("AIDEV_MUT_MAX_FILES", "3"))  # limita mutaç
 MUT_TIMEOUT = float(os.environ.get("AIDEV_MUT_TIMEOUT", "30"))   # s por mutante
 SKIP_MUTATION = bool(os.environ.get("AIDEV_SKIP_MUTATION"))      # pular mutação?
 
-SAMPLE_CSV = OUTPUT_DIR / "test_sample.csv"                      # entrada (passo 1)
+SAMPLE_CSV = OUTPUT_DIR / "RQ6_test_sample.csv"                  # entrada (passo 1)
 RESULTS_CSV = OUTPUT_DIR / "rq6_results.csv"                     # saída por PR
 LOGS_DIR = OUTPUT_DIR / "rq6_logs"                               # logs do pytest por PR
 
@@ -261,7 +261,7 @@ def process_pr(row, commits, workdir):
 def main():
     print(f"[i] RQ6 runner - cobertura + mutação (mutação {'OFF' if SKIP_MUTATION else 'ON'})")
     if not SAMPLE_CSV.exists():                                # precisa do passo 1
-        sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode sample_for_testing.py antes.")
+        sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode RQ6_sample_for_testing.py antes.")
     sample = pd.read_csv(SAMPLE_CSV)                           # lê a amostra
     if RUN_LIMIT:                                              # limita nº de PRs?
         sample = sample.head(RUN_LIMIT)
