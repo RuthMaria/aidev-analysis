@@ -687,7 +687,7 @@ protegido por testes eficazes?</em> — é justamente o que a <strong>RQ6</stron
 (cobertura e mutação) ataca a seguir, completando o arco do estático ao dinâmico.
 </p>
 
-<h3>6.6 <span class="rq">RQ6</span> O código dos agentes é bem testado? — cobertura e mutação (metodologia)</h3>
+<h3>6.6 <span class="rq">RQ6</span> O código dos agentes é bem testado? — cobertura e mutação</h3>
 <p>
 A RQ5 mede qualidade <strong>sem executar</strong> o código (análise estática). A
 RQ6 acrescenta a dimensão <strong>dinâmica</strong>: executa a suíte de testes do
@@ -770,16 +770,16 @@ inteiro) para economizar tempo e disco.
 </p>
 
 <div class="box">
-  <h4>Status e o que será reportado</h4>
-  A amostra já foi gerada (<strong>25 PRs, 5 por agente</strong>, sorteados de
+  <h4>Como o experimento foi conduzido</h4>
+  A amostra foi gerada (<strong>25 PRs, 5 por agente</strong>, sorteados de
   <strong>1.267 candidatos</strong>) e o <em>runner</em>
-  (<code>src/RQ6_step2_mutation_and_coverage.py</code>) já está implementado. Falta apenas
-  <em>executá-lo</em> (passo pesado, na máquina local): ele clona, instala, roda a
-  suíte e o cosmic-ray, com tratamento de erro por PR e relatório de status.
-  Métricas finais, por agente: <strong>% das linhas adicionadas cobertas</strong> e
-  <strong>mutation score médio</strong> dos arquivos modificados. Espera-se que parte
-  dos repos falhe ao instalar/rodar — a tese reporta sobre o subconjunto que rodou
-  (limitação inerente a estudos dinâmicos de mineração).
+  (<code>src/RQ6_step2_mutation_and_coverage.py</code>) foi <strong>executado</strong> na
+  máquina local: para cada PR ele clona, instala num venv isolado, roda a suíte com
+  cobertura e o cosmic-ray, com tratamento de erro por etapa e status por PR. As
+  métricas, quando o repo roda: <strong>% das linhas adicionadas cobertas</strong> e
+  <strong>mutation score</strong> dos arquivos modificados. Como esperado em estudos
+  dinâmicos de mineração, parte dos repos falha ao instalar/rodar — reportamos o
+  subconjunto que rodou (ver Resultados abaixo).
 </div>
 
 <div class="box alerta">
@@ -810,6 +810,89 @@ inteiro) para economizar tempo e disco.
   porque o <code>mutmut</code> não roda nativo no Windows.)
 </div>
 
+<h4>Resultados (exploratórios)</h4>
+<p>
+O <em>runner</em> rodou sobre os 25 PRs. O resultado dominante é o <strong>atrito de
+execução</strong>: apenas <strong>5 dos 25 (20%)</strong> puderam ser reconstruídos e
+testados; os outros <strong>20 falharam</strong> em <code>tests_failed</code>. A falha
+é quase universal entre agentes — só o <strong>Codex</strong> teve 2 sucessos, e o
+<strong>Claude Code</strong> nenhum —, o que reflete a dificuldade de instalar/rodar
+suítes arbitrárias, não uma propriedade do código do agente.
+</p>
+<p>PRs que rodaram (<span style="color:var(--verde)">verde</span>) vs. falharam em
+<code>tests_failed</code> (<span style="color:var(--vermelho)">vermelho</span>), de 5 por agente:</p>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:40%">2</div><div class="bar-fill" style="width:60%; background:var(--vermelho)">3</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:100%; background:var(--vermelho)">5</div></div></div>
+<p>Dos <strong>5 PRs que rodaram</strong>, as métricas dinâmicas:</p>
+<table>
+  <thead><tr><th>Agente</th><th>PR</th><th>Patch coverage</th><th>Mutation score</th></tr></thead>
+  <tbody>
+    <tr><td>Copilot</td><td>yutto #539</td><td class="num">93,8%</td><td class="num">100%</td></tr>
+    <tr><td>Devin</td><td>vlmrun-hub #122</td><td class="num">100%</td><td class="num">—</td></tr>
+    <tr><td>OpenAI Codex</td><td>meta-agent #67</td><td class="num">77,2%</td><td class="num">100%</td></tr>
+    <tr><td>Cursor</td><td>MoviePilot #4577</td><td class="num">—</td><td class="num">100%</td></tr>
+    <tr><td>OpenAI Codex</td><td>peepdb #71</td><td class="num">—</td><td class="num">0%</td></tr>
+  </tbody>
+</table>
+<p><span style="color:var(--azul-claro)">Cobertura</span> e
+<span style="color:var(--amarelo)">mutação</span> por PR (<em>n/d</em> = métrica indisponível):</p>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Copilot · yutto #539</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:93.8%">93,8%</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Devin · vlmrun-hub #122</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:100%">100%</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d</div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">OpenAI Codex · meta-agent #67</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:77.2%">77,2%</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Cursor · MoviePilot #4577</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">n/d</div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">OpenAI Codex · peepdb #71</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">n/d</div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:var(--vermelho); font-weight:600; font-size:.85rem">0% — todos os mutantes sobreviveram</div></div>
+</div>
+<p>
+<strong>Discussão.</strong> A primeira inferência é metodológica e honesta: com
+<em>n</em> = 5, a RQ6 é uma <strong>prova de conceito</strong>, não uma comparação
+entre agentes — o atrito de 80% impede qualquer ranking. Esse atrito é, em si, um
+achado: reconstruir e executar suítes de projetos reais em escala é <em>caro e
+instável</em>, o que delimita o que estudos dinâmicos de mineração conseguem cobrir.
+</p>
+<p>
+Entre os poucos que rodaram, o sinal é <strong>positivo, com uma exceção crucial</strong>.
+A cobertura das linhas adicionadas é alta (77,2% a 100%) e o <em>mutation score</em> é
+100% em três casos — ou seja, quando o agente contribui em repos com suíte funcional,
+seu código tende a ser exercitado <em>e</em> os testes pegam os defeitos injetados.
+A exceção é o PR <strong>peepdb #71 (Codex), com mutation score 0%</strong>: todos os
+mutantes <strong>sobreviveram</strong>. Esse caso é a melhor ilustração do <em>porquê</em>
+de medir mutação — a suíte do projeto <em>passou</em>, mas <strong>não verifica de fato
+o código que o agente adicionou</strong> (oráculos ausentes/fracos). É exatamente a
+divergência entre "cobertura" e "eficácia" que a disciplina de testes destaca: passar
+por uma linha não é o mesmo que testá-la.
+</p>
+<p>
+Por fim, os "—" na tabela são honestos: indicam que uma das métricas não pôde ser
+computada naquele PR (p.ex. nenhuma linha adicionada mapeada ao relatório de cobertura,
+ou o cosmic-ray não encontrou código mutável no recorte). Em suma: a RQ6
+<strong>valida o método</strong> (o pipeline produz cobertura e mutação reais) e
+oferece um <strong>sinal qualitativo</strong> — incluindo um contraexemplo valioso —,
+mas exige uma amostra maior e mais robusta a falhas de instalação para sustentar
+conclusões por agente (ver §7 e §8).
+</p>
+
 <div class="box destaque">
   <h4>Síntese: quatro níveis de evidência</h4>
   Juntando todas as RQs: (1) há uma <strong>hierarquia de aceitação</strong> estável
@@ -817,8 +900,10 @@ inteiro) para economizar tempo e disco.
   <strong>encolhe em tarefas complexas</strong> (RQ3), o achado mais robusto;
   (3) aceitação <strong>não equivale a qualidade estática de código</strong> (RQ5); e
   (4) a RQ6 fecha o arco indo da qualidade <em>estática</em> à <em>dinâmica</em>
-  (cobertura + mutação) — perguntando não só se o código é limpo, mas se ele está de
-  fato <strong>protegido por testes eficazes</strong>. A mensagem para mantenedores e
+  (cobertura + mutação) — não só se o código é limpo, mas se ele está de fato
+  <strong>protegido por testes eficazes</strong>; de forma exploratória (alto atrito de
+  execução, <em>n</em> = 5), já revelou um caso em que a suíte passa mas não testa o
+  código do agente (<em>mutation score</em> 0). A mensagem para mantenedores e
   para a tese: confiar em contribuições de agentes exige olhar além da taxa de
   merge — controlando o tipo de tarefa, inspecionando o código e testando-o.
 </div>
@@ -884,13 +969,15 @@ complexidade ciclomática exclui um punhado de fragmentos <em>outliers</em> (4 p
 </p>
 <p>
 <strong>Atrito de execução na RQ6.</strong> Os testes dinâmicos só rodam nos repos
-que clonam, instalam e executam a suíte com sucesso. Numa primeira execução, a
-maioria falhou em <code>tests_failed</code> (deps de teste ausentes, serviços, build
-ou versão de Python — ver §6.6). Mesmo com as mitigações do runner (instalar extras
-de teste, venv isolado, logs por PR), o <em>n</em> efetivo é menor que a amostra e
-provavelmente <strong>enviesado</strong> para projetos mais fáceis de instalar — o
-que pode não ser aleatório em relação à qualidade. A tese reporta a taxa de sucesso
-e trata os resultados como exploratórios.
+que clonam, instalam e executam a suíte com sucesso. Na execução,
+<strong>apenas 5 dos 25 PRs (20%) rodaram</strong>; os outros 20 falharam em
+<code>tests_failed</code> (deps de teste ausentes, serviços, build ou versão de
+Python — ver §6.6). Mesmo com as mitigações do runner (instalar extras de teste,
+venv isolado, logs por PR), o <em>n</em> efetivo é pequeno e provavelmente
+<strong>enviesado</strong> para projetos mais fáceis de instalar — o que pode não ser
+aleatório em relação à qualidade. Por isso a tese reporta a taxa de sucesso e trata
+os resultados da RQ6 como <strong>exploratórios</strong> (prova de conceito), sem
+ranking por agente.
 </p>
 <h3>Validade externa</h3>
 <p>

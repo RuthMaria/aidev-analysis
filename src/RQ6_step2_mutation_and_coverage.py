@@ -3,12 +3,12 @@ RQ6_step2_mutation_and_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO d
 agentes sobre a amostra selecionada por RQ6_step1_sample_for_testing.py.
 
 Para cada PR da amostra (outputs/RQ6_step1_test_sample.csv) o runner:
-  1. converte a URL da API do GitHub para URL de clone;
-  2. clona só o commit do PR (head_sha) e dá checkout;
-  3. cria um venv isolado e instala o projeto + ferramentas de teste;
-  4. roda a suíte com cobertura e calcula a COBERTURA das linhas que o agente
+  1. Converte a URL da API do GitHub para URL de clone;
+  2. Clona só o commit do PR (head_sha) e dá checkout;
+  3. Cria um venv isolado e instala o projeto + ferramentas de teste;
+  4. Roda a suíte com cobertura e calcula a COBERTURA das linhas que o agente
      adicionou (patch coverage), cruzando coverage.json com os patches;
-  5. roda o cosmic-ray nos arquivos do agente e calcula o MUTATION SCORE.
+  5. Roda o cosmic-ray nos arquivos do agente e calcula o MUTATION SCORE.
 
 Cobertura = pytest-cov; Mutação = cosmic-ray (multiplataforma; o mutmut não roda
 nativamente no Windows). Tudo é defensivo: cada PR pode falhar em qualquer etapa
@@ -36,7 +36,7 @@ from pathlib import Path        # manipular caminhos de forma portável
 
 import pandas as pd            # ler o CSV da amostra e o pr_commit_details
 
-from RQ1_to_RQ4_perceived_quality import path, OUTPUT_DIR   # reaproveita caminho dos dados/saída
+from RQ1_to_RQ4_perceived_quality import path, OUTPUT_DIR, grouped_bar_chart  # caminhos + helper de gráfico
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # evita erro de cp1252
 
@@ -258,13 +258,36 @@ def process_pr(row, commits, workdir):
     return res
 
 
+def plot_results(df):
+    """Gera os gráficos da RQ6 reaproveitando grouped_bar_chart (RQ1-RQ4)."""
+    # 1. Status por agente: quantos PRs rodaram (ok) vs. falharam.
+    status = df.copy()
+    status["ran"] = status["status"].eq("ok")                 # True se a suíte rodou
+    by_agent = status.groupby("agent")["ran"].agg(Rodou="sum", total="size")
+    by_agent["Falhou"] = by_agent["total"] - by_agent["Rodou"]
+    by_agent = by_agent[["Rodou", "Falhou"]].sort_values("Rodou", ascending=False)
+    by_agent.index = by_agent.index.str.replace("_", " ")     # rótulos legíveis
+    grouped_bar_chart(by_agent, "RQ6: PRs que rodaram vs. falharam, por agente",
+                      "nº de PRs", "RQ6_status_por_agente.png", legend_title="Status")
+
+    # 2. Cobertura e mutação dos PRs que rodaram (um grupo por PR).
+    ok = df[df["status"].eq("ok")].copy()
+    if ok.empty:                                              # nada rodou -> sem 2º gráfico
+        return
+    ok["PR"] = ok["agent"].str.replace("_", " ") + " #" + ok["pr_number"].astype(str)
+    metrics = ok.set_index("PR")[["patch_cov", "mut_score"]]
+    metrics.columns = ["Cobertura", "Mutação"]               # nomes da legenda
+    grouped_bar_chart(metrics, "RQ6: cobertura e mutação dos PRs que rodaram",
+                      "%", "RQ6_cobertura_mutacao.png", legend_title="Métrica")
+
+
 def main():
-    print(f"[i] RQ6 runner - cobertura + mutação (mutação {'OFF' if SKIP_MUTATION else 'ON'})")
+    print(f"\n =============== RQ6 runner - COBERTURA + MUTAÇÂO (mutação {'OFF' if SKIP_MUTATION else 'ON'}) ==============\n")
     if not SAMPLE_CSV.exists():                                # precisa do passo 1
         sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode RQ6_step1_sample_for_testing.py antes.")
     sample = pd.read_csv(SAMPLE_CSV)                           # lê a amostra
     if RUN_LIMIT:                                              # limita nº de PRs?
-        sample = sample.head(RUN_LIMIT)
+        sample = sample.head(RUN_LIMIT)                        # pega só os primeiros N PRs
     LOGS_DIR.mkdir(exist_ok=True)                             # pasta dos logs do pytest
 
     # Carrega os patches só dos PRs da amostra (para a cobertura por linha).
@@ -275,17 +298,17 @@ def main():
     workdir = tempfile.mkdtemp(prefix="rq6_")                  # pasta de trabalho
     rows = []                                                  # resultados por PR
     try:
-        for _, row in sample.iterrows():                      # processa cada PR
+        for _, row in sample.iterrows():                      # cada PR da amostra
             print(f"[i] {row['agent']:<12} {clone_url(row['repo_url'])} #{row['pr_number']} ...")
-            r = process_pr(row, commits, workdir)             # roda o pipeline
-            print(f"     -> status={r['status']} cobertura={r['patch_cov']} mutação={r['mut_score']}")
+            r = process_pr(row, commits, workdir)             # processa o PR e devolve o resultado
+            print(f"    -> status={r['status']} cobertura={r['patch_cov']} mutação={r['mut_score']}\n")
             rows.append(r)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)            # limpa os clones
 
     df = pd.DataFrame(rows)                                    # tabela de resultados
     df.to_csv(RESULTS_CSV, index=False, encoding="utf-8")     # salva por PR
-    print(f"\n[i] resultados por PR salvos em {RESULTS_CSV}")
+    print(f"\n -> Resultados por PR salvos em {RESULTS_CSV}")
 
     # Agrega por agente só os PRs que rodaram (status == ok).
     ok = df[df["status"] == "ok"]
@@ -300,10 +323,13 @@ def main():
         ).round(1)
         print(agg)
     # Relatório de status (quantos falharam em cada etapa).
-    print("\n[i] status da amostra:")
+    print("\nStatus da amostra: \n")
     print(df["status"].value_counts().to_string())
     # Onde diagnosticar as falhas de 'tests_failed'.
     print(f"\n[i] logs do pytest (por que cada PR falhou) em: {LOGS_DIR}")
+
+    # Gera os gráficos da RQ6 a partir dos resultados.
+    plot_results(df)
 
 
 if __name__ == "__main__":

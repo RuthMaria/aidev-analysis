@@ -216,23 +216,24 @@ def bar_chart(series, title, ylabel, file):
     print(f"\n-> gráfico salvo em {out}")
 
 
-def grouped_bar_chart(table, title, ylabel, file):
+def grouped_bar_chart(table, title, ylabel, file, legend_title="Categoria"):
     """Gráfico de barras AGRUPADAS para uma tabela 2D (linhas x colunas).
 
-    Usado na RQ3: cada linha é um agente e cada coluna um tipo de tarefa
-    (feat/fix/docs...). Desenha um grupo de barras por agente, uma barra por tipo,
-    deixando visível como a aceitação cai nas tarefas que mexem na lógica.
+    Genérico: cada linha do DataFrame vira um grupo no eixo X e cada coluna uma
+    barra dentro do grupo. Usado na RQ3 (agente x tipo de tarefa) e reaproveitado
+    pela RQ6 (status por agente; cobertura/mutação por PR). 'legend_title' nomeia
+    a legenda conforme o que as colunas representam.
     """
     if not HAS_PLOT:               # sem matplotlib, não há o que desenhar
         return
     # DataFrame.plot(kind="bar") já agrupa por linha (índice) e cria uma barra
-    # por coluna; figsize maior para caber a legenda dos tipos de tarefa.
+    # por coluna; figsize maior para caber a legenda.
     ax = table.plot(kind="bar", figsize=(10, 6), colormap="viridis")
     ax.set_title(title)            # título do gráfico
-    ax.set_ylabel(ylabel)          # rótulo do eixo Y (taxa de merge em %)
-    ax.set_xlabel("")              # sem rótulo no eixo X (nomes dos agentes já aparecem)
-    ax.legend(title="Tipo de tarefa", bbox_to_anchor=(1.0, 1.0))  # legenda fora da área
-    plt.xticks(rotation=30, ha="right")  # inclina os nomes dos agentes
+    ax.set_ylabel(ylabel)          # rótulo do eixo Y
+    ax.set_xlabel("")              # sem rótulo no eixo X (os rótulos das linhas já aparecem)
+    ax.legend(title=legend_title, bbox_to_anchor=(1.0, 1.0))  # legenda fora da área
+    plt.xticks(rotation=30, ha="right")  # inclina os rótulos do eixo X
     plt.tight_layout()             # ajusta margens para nada ficar cortado
     out = OUTPUT_DIR / file        # caminho final dentro de outputs/
     plt.savefig(out, dpi=120)      # salva o PNG no disco
@@ -295,7 +296,8 @@ def main():
         print(to_portuguese(tab_type, columns_name="tipo"))
         grouped_bar_chart(tab_type,                   # barras agrupadas por agente
                           "Taxa de merge por tipo de tarefa (%)",
-                          "% mesclado", "RQ3_taxa_merge_por_tipo.png")
+                          "% mesclado", "RQ3_taxa_merge_por_tipo.png",
+                          legend_title="Tipo de tarefa")
     except FileNotFoundError as e:
         print(f"[!] pulei controle por tipo: {e}")
 
