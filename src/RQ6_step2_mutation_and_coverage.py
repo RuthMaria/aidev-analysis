@@ -282,7 +282,7 @@ def plot_results(df):
 
 
 def main():
-    print(f"\n =============== RQ6 runner - COBERTURA + MUTAÇÂO (mutação {'OFF' if SKIP_MUTATION else 'ON'}) ==============\n")
+    print(f"\n =============== RQ6 runner - COBERTURA + MUTAÇÂO ==============\n")
     if not SAMPLE_CSV.exists():                                # precisa do passo 1
         sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode RQ6_step1_sample_for_testing.py antes.")
     sample = pd.read_csv(SAMPLE_CSV)                           # lê a amostra
@@ -297,9 +297,10 @@ def main():
 
     workdir = tempfile.mkdtemp(prefix="rq6_")                  # pasta de trabalho
     rows = []                                                  # resultados por PR
+    total = len(sample)                                       # nº de PRs a processar
     try:
-        for _, row in sample.iterrows():                      # cada PR da amostra
-            print(f"[i] {row['agent']:<12} {clone_url(row['repo_url'])} #{row['pr_number']} ...")
+        for n, (_, row) in enumerate(sample.iterrows(), start=1):  # contador 1..total
+            print(f"[{n}/{total}] - {row['agent']:<12} {clone_url(row['repo_url'])} #{row['pr_number']} ...")
             r = process_pr(row, commits, workdir)             # processa o PR e devolve o resultado
             print(f"    -> status={r['status']} cobertura={r['patch_cov']} mutação={r['mut_score']}\n")
             rows.append(r)

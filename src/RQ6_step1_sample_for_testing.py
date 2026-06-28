@@ -74,7 +74,7 @@ def head_sha_by_pr():
 
 def main():
     # Mensagem inicial mostrando o alvo de amostra escolhido.
-    print(f"[i] selecionando amostra de PRs para RQ6 (alvo = {SAMPLE or 'todos'})")
+    print(f"\n[i] selecionando amostra de PRs para RQ6 (alvo = {SAMPLE or 'todos'})")
 
     # 1. PRs mesclados do subset popular (AIDev-pop) -------------------------
     prs = pd.read_parquet(path("pull_request.parquet"))        # PRs de repos > 100 estrelas

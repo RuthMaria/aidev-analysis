@@ -264,9 +264,7 @@ def to_portuguese(table, columns_name=None):
     return t
 
 
-def main():
-    print(f"[i] lendo de: {DATA_DIR}")   # mostra a origem dos dados (local ou HF)
-    
+def main():    
     # ---- RQ1: carrega TODOS os PRs de agentes e mede aceitação/rejeição ----
     print("\n========================= RQ1. ACEITAÇÃO / REJEIÇÃO POR AGENTE =========================\n")
     agents = load_prs("all_pull_request.parquet")  # Carrega uma tabela de PRs e garante as colunas que usamos (aceitação/rejeição/open).
@@ -315,9 +313,28 @@ def main():
               "Taxa de merge: agentes vs. humanos (%)", "% mesclado",
               "RQ4_agentes_vs_humanos.png")
 
-    # Lembrete de interpretação dos resultados.
-    print("\nPronto. Interprete: maior taxa de merge e menor 'changes_requested' "
-          "sugerem PRs de maior qualidade percebida pelos mantenedores.")
+    # Conclusão: síntese das quatro questões de pesquisa (qualidade PERCEBIDA).
+    print("\nInterprete (RQ1-RQ4): a aceitação varia muito entre agentes (RQ1) e "
+          "acompanha menos retrabalho de revisão (RQ2); cai nas tarefas que mexem na "
+          "lógica (RQ3); e os melhores já se equiparam aos humanos (RQ4). É qualidade "
+          "percebida (o que o mantenedor aceita) — a intrínseca fica nas RQ5/RQ6.")
+    # print("\n===================== CONCLUSÃO (RQ1-RQ4) =====================\n")
+    # print(
+    #     "RQ1 (aceitação): a taxa de merge varia muito entre agentes (~59% a ~88%).\n"
+    #     "     'Não mesclado' não é 'rejeitado' — distinga recusa (rejeitado) de\n"
+    #     "     abandono (em aberto), que pesa em alguns agentes.\n"
+    #     "RQ2 (esforço de revisão): quem é mais aceito tende a gerar menos retrabalho\n"
+    #     "     (menos 'changes_requested' e menos comentários inline por PR).\n"
+    #     "RQ3 (tipo de tarefa): para TODOS os agentes a aceitação cai nas tarefas que\n"
+    #     "     mexem na lógica (feat/fix/refactor) vs. docs/build — a lacuna de\n"
+    #     "     qualidade aparece justamente onde o código é mais crítico.\n"
+    #     "RQ4 (vs. humanos): os melhores agentes já são competitivos com o baseline\n"
+    #     "     humano (~76,8% de aceitação); os demais ficam abaixo.\n\n"
+    #     "Em conjunto: estas RQs medem qualidade PERCEBIDA (o que o mantenedor aceita),\n"
+    #     "não corretude. Leia-as juntas e controle o tipo de tarefa antes de comparar\n"
+    #     "agentes; a qualidade intrínseca do código é avaliada na RQ5 (estática) e na\n"
+    #     "RQ6 (testes)."
+    # )
 
 
 # Só executa main() quando o arquivo é rodado direto (não quando importado).

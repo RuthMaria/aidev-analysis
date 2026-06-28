@@ -172,7 +172,7 @@ def lizard_column(codes):
                 pool = mp.Pool(1)
                 skipped += 1
             if (i + 1) % 5000 == 0 or (i + 1) == total:
-                print(f"    lizard: {i + 1:,}/{total:,} fragmentos "
+                print(f"    lizard: [{i + 1:,}/{total:,}] fragmentos "
                       f"({skipped} pulados por timeout)")
     finally:
         pool.terminate()                   # garante que o worker não fique órfão
@@ -245,12 +245,12 @@ def static_quality_by_agent(df):
 
 
 def main():
-    print(f"[i] RQ5 - análise estática (amostra = {SAMPLE or 'todos'} arquivos .py)")
-    print("[i] Carregando patches de pr_commit_details ...")
+    print(f"\n ========= RQ5 - Análise estática (amostra de {SAMPLE or 'todos'} arquivos .py) =========\n")
+    print("[i] Carregando patches de pr_commit_details ...\n")
     df = load_python_files() # carrega os arquivos .py com código adicionado e metadados do PR
-    print(f"[i] {len(df):,} arquivos .py com código adicionado para analisar")
+    print(f"[i] {len(df):,} arquivos .py com código adicionado para analisar\n")
 
-    print("[i] Rodando ruff (lint) ...")
+    print("[i] Rodando ruff (lint) ...\n")
     ruff = run_ruff(df["code"])
     df["n_warnings"] = df.index.map(lambda i: ruff[i]["n_warnings"])
     df["syntax_error"] = df.index.map(lambda i: ruff[i]["syntax_error"])
