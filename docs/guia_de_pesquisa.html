@@ -341,7 +341,7 @@ contribuição que se correlacionam com qualidade.
       complexidade média.</li>
 </ol>
 <p><strong>RQ6 — qualidade dinâmica / testabilidade</strong>
-   (<code>RQ6_sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
+   (<code>RQ6_step1_sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
 <ol start="9">
   <li>Selecionar uma amostra estratificada de PRs mesclados que tragam código <em>e</em>
       testes em Python (passo minerável).</li>
@@ -352,7 +352,7 @@ contribuição que se correlacionam com qualidade.
 </ol>
 <p>
 A análise é reproduzível pelos scripts <code>RQ1_to_RQ4_perceived_quality.py</code> (RQ1–RQ4),
-<code>RQ5_static_quality.py</code> (RQ5) e <code>RQ6_sample_for_testing.py</code> +
+<code>RQ5_static_quality.py</code> (RQ5) e <code>RQ6_step1_sample_for_testing.py</code> +
 <code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
 <code>pandas</code>.
 </p>
@@ -742,7 +742,7 @@ o que cobertura e mutação vão verificar.
 </div>
 
 <p><strong>Critérios da amostra</strong> (e o porquê de cada um), gerada por
-<code>src/RQ6_sample_for_testing.py</code>:</p>
+<code>src/RQ6_step1_sample_for_testing.py</code>:</p>
 <table>
   <thead><tr><th>Critério</th><th>Por quê</th></tr></thead>
   <tbody>
@@ -1015,7 +1015,7 @@ python src/RQ1_to_RQ4_perceived_quality.py
 AIDEV_RQ5_SAMPLE=0 python src/RQ5_static_quality.py
 
 # 5. RQ6: selecionar a amostra de PRs para os testes dinâmicos
-python src/RQ6_sample_for_testing.py        # gera outputs/RQ6_test_sample.csv
+python src/RQ6_step1_sample_for_testing.py        # gera outputs/RQ6_test_sample.csv
 
 # 6. RQ6: rodar cobertura + mutação sobre a amostra (PESADO: clona e instala repos)
 python src/mutation_coverage.py             # gera outputs/RQ6_results.csv

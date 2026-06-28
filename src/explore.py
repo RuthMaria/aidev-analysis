@@ -36,7 +36,8 @@ TABLES = [
     "pr_review_comments_v2.parquet",  # comentarios inline de revisao
     "pr_task_type.parquet",           # tipo da tarefa (feat/fix/docs...) via LLM
     "human_pull_request.parquet",     # PRs de humanos (baseline)
-    "pr_commit_details.parquet"      # detalhes dos commits (RQ5)
+    "pr_commit_details.parquet",      # detalhes dos commits (RQ5)
+    "pr_timeline.parquet"            # linha do tempo dos PRs
 ]
 
 

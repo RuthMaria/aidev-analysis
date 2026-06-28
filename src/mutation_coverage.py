@@ -1,6 +1,6 @@
 r"""
 mutation_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO do código dos
-agentes sobre a amostra selecionada por RQ6_sample_for_testing.py.
+agentes sobre a amostra selecionada por RQ6_step1_sample_for_testing.py.
 
 Para cada PR da amostra (outputs/RQ6_test_sample.csv) o runner:
   1. converte a URL da API do GitHub para URL de clone;
@@ -261,7 +261,7 @@ def process_pr(row, commits, workdir):
 def main():
     print(f"[i] RQ6 runner - cobertura + mutação (mutação {'OFF' if SKIP_MUTATION else 'ON'})")
     if not SAMPLE_CSV.exists():                                # precisa do passo 1
-        sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode RQ6_sample_for_testing.py antes.")
+        sys.exit(f"[!] amostra não encontrada: {SAMPLE_CSV}. Rode RQ6_step1_sample_for_testing.py antes.")
     sample = pd.read_csv(SAMPLE_CSV)                           # lê a amostra
     if RUN_LIMIT:                                              # limita nº de PRs?
         sample = sample.head(RUN_LIMIT)
