@@ -9,7 +9,7 @@ radon
 lizard
 bandit
 
-# RQ6 - testes dinâmicos: cobertura + mutação (src/mutation_coverage.py)
+# RQ6 - testes dinâmicos: cobertura + mutação (src/RQ6_step2_mutation_and_coverage.py)
 pytest
 pytest-cov
 cosmic-ray   # mutação multiplataforma (mutmut não roda nativo no Windows)

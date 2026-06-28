@@ -341,7 +341,7 @@ contribuição que se correlacionam com qualidade.
       complexidade média.</li>
 </ol>
 <p><strong>RQ6 — qualidade dinâmica / testabilidade</strong>
-   (<code>RQ6_step1_sample_for_testing.py</code> + <code>mutation_coverage.py</code>):</p>
+   (<code>RQ6_step1_sample_for_testing.py</code> + <code>RQ6_step2_mutation_and_coverage.py</code>):</p>
 <ol start="9">
   <li>Selecionar uma amostra estratificada de PRs mesclados que tragam código <em>e</em>
       testes em Python (passo minerável).</li>
@@ -353,7 +353,7 @@ contribuição que se correlacionam com qualidade.
 <p>
 A análise é reproduzível pelos scripts <code>RQ1_to_RQ4_perceived_quality.py</code> (RQ1–RQ4),
 <code>RQ5_static_quality.py</code> (RQ5) e <code>RQ6_step1_sample_for_testing.py</code> +
-<code>mutation_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
+<code>RQ6_step2_mutation_and_coverage.py</code> (RQ6) — ver §9 —, escritos em Python com
 <code>pandas</code>.
 </p>
 </section>
@@ -754,7 +754,7 @@ o que cobertura e mutação vão verificar.
   </tbody>
 </table>
 
-<p><strong>Pipeline de execução</strong> (passo 2, <code>src/mutation_coverage.py</code>), por PR amostrado:</p>
+<p><strong>Pipeline de execução</strong> (passo 2, <code>src/RQ6_step2_mutation_and_coverage.py</code>), por PR amostrado:</p>
 <pre><code>git fetch --depth 1 origin &lt;head_sha&gt; &amp;&amp; git checkout FETCH_HEAD  # só o commit do PR
 python -m venv .venv &amp;&amp; .venv/python -m pip install -e .         # venv isolado + deps
 pytest --cov --cov-report=json:cov.json                          # suíte + cobertura
@@ -773,7 +773,7 @@ inteiro) para economizar tempo e disco.
   <h4>Status e o que será reportado</h4>
   A amostra já foi gerada (<strong>25 PRs, 5 por agente</strong>, sorteados de
   <strong>1.267 candidatos</strong>) e o <em>runner</em>
-  (<code>src/mutation_coverage.py</code>) já está implementado. Falta apenas
+  (<code>src/RQ6_step2_mutation_and_coverage.py</code>) já está implementado. Falta apenas
   <em>executá-lo</em> (passo pesado, na máquina local): ele clona, instala, roda a
   suíte e o cosmic-ray, com tratamento de erro por PR e relatório de status.
   Métricas finais, por agente: <strong>% das linhas adicionadas cobertas</strong> e
@@ -925,7 +925,7 @@ em volta.
       numa amostra de repos reconstruídos, para triangular.</li>
   <li><strong>Testes dinâmicos</strong> (RQ6 — <em>amostra e runner já
       implementados</em>, ver §6.6): o <em>runner</em>
-      (<code>src/mutation_coverage.py</code>) reconstrói os repos e mede
+      (<code>src/RQ6_step2_mutation_and_coverage.py</code>) reconstrói os repos e mede
       <strong>cobertura</strong> (<code>pytest-cov</code>) e <strong>mutation
       score</strong> (<code>cosmic-ray</code>) do código dos agentes. Próximos passos:
       executar o runner na amostra, ampliar o tamanho, e explorar <em>test smells</em>
@@ -1018,7 +1018,7 @@ AIDEV_RQ5_SAMPLE=0 python src/RQ5_static_quality.py
 python src/RQ6_step1_sample_for_testing.py        # gera outputs/RQ6_test_sample.csv
 
 # 6. RQ6: rodar cobertura + mutação sobre a amostra (PESADO: clona e instala repos)
-python src/mutation_coverage.py             # gera outputs/RQ6_results.csv
+python src/RQ6_step2_mutation_and_coverage.py             # gera outputs/RQ6_results.csv
 #    AIDEV_RUN_LIMIT=3      -> processa só os 3 primeiros PRs (teste rápido)
 #    AIDEV_SKIP_MUTATION=1  -> mede só cobertura (mutação é lenta)</code></pre>
 <p>

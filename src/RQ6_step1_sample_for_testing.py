@@ -5,7 +5,7 @@ testes dinâmicos (cobertura + mutação).
 Cobertura e teste de mutação precisam EXECUTAR a suíte de testes em um repo
 reconstruído — o que é pesado e instável. Por isso a RQ6 roda sobre uma AMOSTRA
 curada de PRs. Este script faz a parte 100% minerável: escolhe os PRs e gera um
-CSV com tudo que o runner (mutation_coverage.py) precisa para clonar, dar
+CSV com tudo que o runner (RQ6_step2_mutation_and_coverage.py) precisa para clonar, dar
 checkout e medir.
 
 Critérios de inclusão (framing B - quão bem-testado é o código do agente):

@@ -1,5 +1,5 @@
 r"""
-mutation_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO do código dos
+RQ6_step2_mutation_and_coverage.py - RQ6 (passo 2): mede COBERTURA e MUTAÇÃO do código dos
 agentes sobre a amostra selecionada por RQ6_step1_sample_for_testing.py.
 
 Para cada PR da amostra (outputs/RQ6_test_sample.csv) o runner:
@@ -16,7 +16,7 @@ nativamente no Windows). Tudo é defensivo: cada PR pode falhar em qualquer etap
 subconjunto que rodou.
 
 Uso (Git Bash):
-  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/mutation_coverage.py
+  AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ6_step2_mutation_and_coverage.py
 
 Variáveis de ambiente:
   AIDEV_RUN_LIMIT     quantos PRs processar (padrão: todos do CSV)
