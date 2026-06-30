@@ -46,15 +46,13 @@ def path(name):
 
 
 def main():
-    print(f"[i] lendo de: {DATA_DIR}\n")
     for index, name in enumerate(TABLES, start=1):
         try:
             df = pd.read_parquet(path(name))
         except FileNotFoundError:
             print(f"[!] não encontrado: {name}\n")
             continue
-        print("=" * 160)
-        print(f"{index}º TABELA SELECIONADA \n")
+        print(f"\n ======================================= {index}º TABELA SELECIONADA =======================================\n")
         print(f"{name}   ->   {len(df):,} linhas, {len(df.columns)} colunas \n")
         print("COLUNAS:", list(df.columns), "\n")
         print(df.head(1))

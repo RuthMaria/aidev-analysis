@@ -883,6 +883,46 @@ o código que o agente adicionou</strong> (oráculos ausentes/fracos). É exatam
 divergência entre "cobertura" e "eficácia" que a disciplina de testes destaca: passar
 por uma linha não é o mesmo que testá-la.
 </p>
+<div class="box alerta">
+  <h4>peepdb #71: cobertura "—" e mutação 0% dizem o mesmo</h4>
+  Note que, nesse PR, a cobertura também ficou indisponível (<em>—</em>). Não é
+  contradição: são <strong>duas medições independentes</strong> apontando o mesmo
+  diagnóstico. A suíte <em>rodou</em> (status <code>ok</code>), mas <strong>nenhuma das
+  linhas adicionadas pelo agente aparece no relatório de cobertura</strong> — sinal de
+  que esse código sequer é importado/executado pelos testes; por isso não há
+  porcentagem a calcular. A mutação confirma de forma independente: 0% = nenhum mutante
+  morto, porque os testes nunca exercitam aquele código. Conclusão convergente: o
+  código que o agente adicionou está <strong>efetivamente sem teste</strong>, ainda que
+  a suíte do projeto passe.
+  <p style="margin:.6em 0 0">
+    <strong>Atenção: são dois verbos diferentes.</strong> As duas métricas convergem, mas
+    chegam ao resultado por caminhos distintos — e ambas rodam <strong>a suíte inteira do
+    projeto</strong> (todos os <code>test_*.py</code> que existem no repositório, no estado
+    do commit do PR).
+  </p>
+  <ul style="margin:.3em 0 0">
+    <li>
+      A <strong>cobertura</strong> <em>rastreia execução</em>: roda a suíte inteira e o
+      <code>pytest-cov</code> anota, linha a linha, quais foram <strong>executadas</strong>.
+      Cruzamos isso com as <strong>linhas adicionadas</strong> pelo agente. No peepdb #71,
+      nenhuma linha adicionada aparece como executada — daí o <em>—</em>.
+    </li>
+    <li>
+      A <strong>mutação</strong> <em>verifica consequência</em>: estraga o código do agente
+      (troca um <code>+</code> por <code>-</code>, um <code>True</code> por <code>False</code>…)
+      e roda a suíte inteira para ver se <strong>algum teste quebra</strong>. Se nada quebra,
+      o mutante "sobrevive". Aqui ela muta o <strong>arquivo inteiro</strong> que o agente
+      tocou (<code>module-path</code> do cosmic-ray), não só as linhas novas. 0% mortos =
+      dá para estragar o código à vontade que <strong>nenhum teste reclama</strong>.
+    </li>
+  </ul>
+  <p style="margin:.3em 0 0">
+    Ou seja: uma olha se a linha foi <strong>tocada</strong>; a outra olha se quebrá-la tem
+    <strong>consequência</strong>. As duas deram negativo — por isso a conclusão é robusta:
+    o código que o agente adicionou <strong>não é exercitado por nenhum teste do projeto</strong>,
+    ainda que a suíte passe.
+  </p>
+</div>
 <p>
 Por fim, os "—" na tabela são honestos: indicam que uma das métricas não pôde ser
 computada naquele PR (p.ex. nenhuma linha adicionada mapeada ao relatório de cobertura,
