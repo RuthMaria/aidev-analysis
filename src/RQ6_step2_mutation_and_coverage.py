@@ -15,6 +15,15 @@ nativamente no Windows). Tudo é defensivo: cada PR pode falhar em qualquer etap
 (clone, instalação, testes) — registramos o status e seguimos. A tese reporta o
 subconjunto que rodou.
 
+Controle de baseline (importante): a mutação só é confiável se a suíte passa LIMPA
+sem nenhuma mutação. Por isso o status distingue:
+  - ok               -> suíte rodou e TODOS os testes passaram (mutação é válida);
+  - baseline_failed  -> suíte rodou mas tinha testes falhando (baseline vermelho):
+                        a cobertura ainda é medida (com ressalva), mas a mutação é
+                        PULADA, pois com baseline quebrado todo mutante "morreria"
+                        trivialmente, produzindo 100% falso;
+  - tests_failed     -> a suíte nem gerou relatório (clone/instalação/coleta falhou).
+
 Uso (Git Bash):
   AIDEV_DATA="C:\Users\Ruth\Downloads\aidev" python src/RQ6_step2_mutation_and_coverage.py
 
@@ -106,7 +115,14 @@ def added_lines_by_file(pr_id, commits):
 
 
 def patch_coverage(repo_dir, venv_py, added_map, log_path):
-    """Cobertura SÓ das linhas adicionadas (patch coverage) -> (cobertas, total)."""
+    """Cobertura SÓ das linhas adicionadas -> (baseline_ok, cobertas, total) ou None.
+
+    baseline_ok = True só se o pytest terminou com código 0 (TODOS os testes passaram).
+    Se a suíte rodou mas tinha testes falhando (baseline vermelho), baseline_ok = False:
+    a cobertura ainda é confiável (uma linha executa mesmo num teste que falha), mas a
+    MUTAÇÃO não deve ser medida — com baseline quebrado o cosmic-ray contaria todo
+    mutante como "morto" (100% falso).
+    """
     cov_json = repo_dir / "cov.json"                           # arquivo de saída
     # Roda a suíte com cobertura, exportando o relatório em JSON.
     ok, out = run([str(venv_py), "-m", "pytest", "-q",         # pytest silencioso
@@ -132,7 +148,7 @@ def patch_coverage(repo_dir, venv_py, added_map, log_path):
         executable = lines & (executed | missing)              # linhas add. que contam
         covered += len(lines & executed)                       # add. cobertas
         total += len(executable)                               # add. executáveis
-    return covered, total                                      # (cobertas, total)
+    return ok, covered, total                                  # ok = baseline verde (returncode 0)
 
 
 def mutation_score(repo_dir, venv_py, code_files, log_path):
@@ -241,14 +257,22 @@ def process_pr(row, commits, workdir):
     added_map = added_lines_by_file(row["pr_id"], commits)     # linhas add. por arquivo
     log_path = LOGS_DIR / f"pr_{row['pr_id']}.log"             # log do pytest deste PR
     cov = patch_coverage(repo_dir, venv_py, added_map, log_path)
-    if cov is None:                                            # suíte não rodou
+    if cov is None:                                            # suíte nem gerou relatório
         res["status"] = "tests_failed"
         res["reason"] = log_path.name                          # aponta o log p/ diagnóstico
         return res
-    covered, total = cov
+    baseline_ok, covered, total = cov
     res["patch_cov"] = round(100 * covered / total, 1) if total else None
 
-    # 4. Mutação (opcional, pesada).
+    # Baseline vermelho: a suíte RODOU, mas tinha testes falhando. A cobertura acima
+    # vale (com ressalva: pode subestimar), porém NÃO medimos mutação — com baseline
+    # quebrado todo mutante "morreria" trivialmente (100% falso). Encerra aqui.
+    if not baseline_ok:
+        res["status"] = "baseline_failed"
+        res["reason"] = log_path.name
+        return res
+
+    # 4. Mutação (opcional, pesada) - só com baseline verde.
     if not SKIP_MUTATION:
         code_files = [f for f in str(row["code_files"]).split(";") if f.endswith(".py")]
         mut_log = LOGS_DIR / f"pr_{row['pr_id']}_mutation.log"  # diagnóstico do cosmic-ray
@@ -260,24 +284,29 @@ def process_pr(row, commits, workdir):
 
 def plot_results(df):
     """Gera os gráficos da RQ6 reaproveitando grouped_bar_chart (RQ1-RQ4)."""
-    # 1. Status por agente: quantos PRs rodaram (ok) vs. falharam.
+    # 1. Status por agente: rodou limpo (ok) vs. baseline vermelho vs. nem rodou.
+    cats = ["Rodou limpo", "Baseline vermelho", "Não rodou"]
     status = df.copy()
-    status["ran"] = status["status"].eq("ok")                 # True se a suíte rodou
-    by_agent = status.groupby("agent")["ran"].agg(Rodou="sum", total="size")
-    by_agent["Falhou"] = by_agent["total"] - by_agent["Rodou"]
-    by_agent = by_agent[["Rodou", "Falhou"]].sort_values("Rodou", ascending=False)
+    status["cat"] = status["status"].map(
+        lambda s: "Rodou limpo" if s == "ok"
+        else ("Baseline vermelho" if s == "baseline_failed" else "Não rodou"))
+    by_agent = status.groupby(["agent", "cat"]).size().unstack(fill_value=0)
+    for col in cats:                                          # garante as 3 colunas
+        if col not in by_agent:
+            by_agent[col] = 0
+    by_agent = by_agent[cats].sort_values("Rodou limpo", ascending=False)
     by_agent.index = by_agent.index.str.replace("_", " ")     # rótulos legíveis
-    grouped_bar_chart(by_agent, "RQ6: PRs que rodaram vs. falharam, por agente",
+    grouped_bar_chart(by_agent, "RQ6: status de execução por agente",
                       "nº de PRs", "RQ6_status_por_agente.png", legend_title="Status")
 
-    # 2. Cobertura e mutação dos PRs que rodaram (um grupo por PR).
-    ok = df[df["status"].eq("ok")].copy()
-    if ok.empty:                                              # nada rodou -> sem 2º gráfico
+    # 2. Cobertura (baseline verde + vermelho) e mutação (só verde) por PR.
+    ran = df[df["status"].isin(["ok", "baseline_failed"])].copy()
+    if ran.empty:                                            # nada rodou -> sem 2º gráfico
         return
-    ok["PR"] = ok["agent"].str.replace("_", " ") + " #" + ok["pr_number"].astype(str)
-    metrics = ok.set_index("PR")[["patch_cov", "mut_score"]]
+    ran["PR"] = ran["agent"].str.replace("_", " ") + " #" + ran["pr_number"].astype(str)
+    metrics = ran.set_index("PR")[["patch_cov", "mut_score"]]
     metrics.columns = ["Cobertura", "Mutação"]               # nomes da legenda
-    grouped_bar_chart(metrics, "RQ6: cobertura e mutação dos PRs que rodaram",
+    grouped_bar_chart(metrics, "RQ6: cobertura (verde+vermelho) e mutação (só verde) por PR",
                       "%", "RQ6_cobertura_mutacao.png", legend_title="Métrica")
 
 
@@ -311,19 +340,33 @@ def main():
     df.to_csv(RESULTS_CSV, index=False, encoding="utf-8")     # salva por PR
     print(f"\n -> Resultados por PR salvos em {RESULTS_CSV}")
 
-    # Agrega por agente só os PRs que rodaram (status == ok).
-    ok = df[df["status"] == "ok"]
-    print("\n===================== RQ6. COBERTURA E MUTAÇÃO POR AGENTE =====================\n")
-    if ok.empty:
-        print("[!] nenhum PR rodou até o fim (clone/instalação/testes falharam).")
-    else:
-        agg = ok.groupby("agent").agg(
-            n_prs=("pr_number", "size"),                       # quantos PRs rodaram
+    # COBERTURA vale para baseline verde (ok) E vermelho (baseline_failed) - com a
+    # ressalva de que, no vermelho, pode estar subestimada. MUTAÇÃO: só baseline verde.
+    ran = df[df["status"].isin(["ok", "baseline_failed"])]     # produziram cobertura
+    ok = df[df["status"] == "ok"]                              # baseline verde -> mutação válida
+
+    print("\n============ RQ6. COBERTURA POR AGENTE (baseline verde + vermelho*) ============\n")
+    if ran["patch_cov"].notna().any():
+        cov_agg = ran.groupby("agent").agg(
+            n_prs=("patch_cov", "count"),                      # PRs com cobertura medida
             cobertura_media=("patch_cov", "mean"),            # % linhas add. cobertas
+        ).round(1)
+        print(cov_agg)
+        print("\n* inclui PRs de baseline vermelho; a cobertura é real, mas pode subestimar.")
+    else:
+        print("[!] nenhuma cobertura medida.")
+
+    print("\n============ RQ6. MUTAÇÃO POR AGENTE (somente baseline verde) ============\n")
+    if ok["mut_score"].notna().any():
+        mut_agg = ok.groupby("agent").agg(
+            n_prs=("mut_score", "count"),                      # PRs com mutação válida
             mutation_score_medio=("mut_score", "mean"),       # % mutantes mortos
         ).round(1)
-        print(agg)
-    # Relatório de status (quantos falharam em cada etapa).
+        print(mut_agg)
+    else:
+        print("[!] nenhuma mutação válida (baseline verde) medida.")
+
+    # Relatório de status (quantos em cada etapa).
     print("\nStatus da amostra: \n")
     print(df["status"].value_counts().to_string())
     # Onde diagnosticar as falhas de 'tests_failed'.

@@ -400,6 +400,20 @@ merge: note que a faixa do Codex é estreitíssima (±0,1 pp, n=814k) e a do Cla
   Como as faixas dos agentes <strong>não se sobrepõem</strong>, o <em>ranking</em> de
   aceitação é estatisticamente sólido — não é ruído amostral —, ainda que a incerteza
   do Claude Code seja maior que a do Codex.
+  <p style="margin:.6em 0 0">
+    <strong>Atenção — o IC resolve só metade do desbalanceamento.</strong> Volumes muito
+    diferentes causam <em>dois</em> problemas distintos: (1) <strong>precisão</strong> —
+    poucos PRs dão uma taxa mais incerta (mais "tremida"); e (2)
+    <strong>representatividade / dominância</strong> — o Codex, com 814k PRs, pode dominar
+    qualquer média agregada, e as amostras de cada agente vêm de repositórios e períodos
+    distintos. O IC de Wilson ataca <strong>só o problema (1)</strong>: ele não
+    <em>apaga</em> o desbalanceamento, apenas o <strong>torna visível e testável</strong> —
+    dá a cada agente uma faixa proporcional ao seu <em>n</em> e nos faz comparar
+    <strong>faixas, não pontos</strong> (faixas que não se tocam = diferença real). O
+    problema (2) fica por conta de outras medidas: <strong>estratificação por agente</strong>,
+    <strong>recorte temporal comum</strong> e <strong>regressão logística</strong> com
+    controles (ver §7 e §8).
+  </p>
 </div>
 <p>Taxa de merge (quanto maior, melhor a aceitação):</p>
 <div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track"><div class="bar-fill" style="width:87.7%">87,7%</div></div></div>
@@ -698,7 +712,7 @@ Usamos duas técnicas clássicas de teste de software:
   <thead><tr><th>Técnica</th><th>O que mede</th><th>Ferramenta</th></tr></thead>
   <tbody>
     <tr><td><strong>Cobertura</strong> de linha/ramo</td><td>quanto das <em>linhas adicionadas</em> pelo agente é de fato exercitado pela suíte (<em>patch coverage</em>)</td><td><code>pytest-cov</code></td></tr>
-    <tr><td><strong>Teste de mutação</strong></td><td>injeta defeitos (mutantes) no código do agente e mede quantos a suíte <em>mata</em> (<em>mutation score</em>)</td><td><code>cosmic-ray</code></td></tr>
+    <tr><td><strong>Teste de mutação</strong></td><td>injeta defeitos (mutantes) nos <strong>arquivos</strong> que o agente adicionou/alterou (o arquivo inteiro, não só as linhas novas) e mede quantos a suíte <em>mata</em> (<em>mutation score</em>)</td><td><code>cosmic-ray</code></td></tr>
   </tbody>
 </table>
 
@@ -711,24 +725,6 @@ Usamos duas técnicas clássicas de teste de software:
   Por isso as duas se complementam — e a mutação é a evidência mais forte de que os
   testes realmente protegem o código.
 </div>
-
-<div class="box">
-  <h4>Por que medir o <em>código</em> do agente (e não os testes dele)?</h4>
-  Havia duas opções: (A) avaliar a qualidade dos <em>testes</em> que o agente
-  escreve, ou (B) avaliar quão bem-testado é o <em>código</em> que o agente escreve.
-  Escolhemos a <strong>(B)</strong> porque ela liga diretamente "testes" ao objeto da
-  tese — a <strong>qualidade do código gerado</strong>. Aplicamos cobertura às linhas
-  que o agente adicionou e mutação aos arquivos que ele modificou.
-</div>
-
-<p>
-<strong>Motivação (medição direta, sobre todo o subset).</strong> Antes da análise
-dinâmica, uma observação barata sobre <code>pr_commit_details</code>: os agentes já
-acompanham o código com testes em proporções bem diferentes — de
-<strong>50% (Claude Code)</strong> e 48,6% (Codex) a <strong>28% (Cursor)</strong>
-dos PRs. Mas <em>presença</em> de teste não garante <em>eficácia</em>: é exatamente
-o que cobertura e mutação vão verificar.
-</p>
 
 <div class="box alerta">
   <h4>Por que uma amostra curada (e não o dataset inteiro)?</h4>
@@ -753,15 +749,6 @@ o que cobertura e mutação vão verificar.
     <tr><td><code>head_sha</code> conhecido</td><td>permite dar <code>git checkout</code> no estado exato do PR (obtido do último evento <code>committed</code> em <code>pr_timeline</code>)</td></tr>
   </tbody>
 </table>
-
-<p><strong>Pipeline de execução</strong> (passo 2, <code>src/RQ6_step2_mutation_and_coverage.py</code>), por PR amostrado:</p>
-<pre><code>git fetch --depth 1 origin &lt;head_sha&gt; &amp;&amp; git checkout FETCH_HEAD  # só o commit do PR
-python -m venv .venv &amp;&amp; .venv/python -m pip install -e .         # venv isolado + deps
-pytest --cov --cov-report=json:cov.json                          # suíte + cobertura
-# cobertura SÓ das linhas adicionadas (cruza cov.json com os patches do PR)
-cosmic-ray init cr.toml cr.sqlite &amp;&amp; cosmic-ray exec cr.toml cr.sqlite  # mutação
-cosmic-ray dump cr.sqlite                                        # mortos vs sobreviventes</code></pre>
-<p>
 A mutação usa <code>cosmic-ray</code> (multiplataforma; o <code>mutmut</code> não roda
 nativo no Windows) e é restrita aos <em>arquivos do diff</em> — não ao projeto todo —
 justamente para ser viável, senão o número de mutantes explodiria. Cada PR roda num
@@ -812,76 +799,114 @@ inteiro) para economizar tempo e disco.
 
 <h4>Resultados (exploratórios)</h4>
 <p>
-O <em>runner</em> rodou sobre os 25 PRs. O resultado dominante é o <strong>atrito de
-execução</strong>: apenas <strong>5 dos 25 (20%)</strong> puderam ser reconstruídos e
-testados; os outros <strong>20 falharam</strong> em <code>tests_failed</code>. A falha
-é quase universal entre agentes — só o <strong>Codex</strong> teve 2 sucessos, e o
-<strong>Claude Code</strong> nenhum —, o que reflete a dificuldade de instalar/rodar
-suítes arbitrárias, não uma propriedade do código do agente.
+O <em>runner</em> rodou sobre os 25 PRs, e o resultado se lê em <strong>dois filtros</strong>.
+O primeiro é o <strong>atrito de execução</strong>: <strong>20 dos 25 (80%)</strong> nem
+chegaram a rodar (status <code>tests_failed</code> — clone, instalação ou coleta de testes
+falhou). O segundo, mais sutil, só apareceu ao <strong>auditar os logs</strong>: dos
+<strong>5 que rodaram</strong>, apenas <strong>2</strong> tinham a suíte <strong>verde</strong>
+(todos os testes passando); os outros <strong>3</strong> rodaram com
+<strong>baseline vermelho</strong> (já tinham testes falhando, sem nenhuma mutação). Como o
+teste de mutação só é confiável sobre uma suíte verde, a medição dinâmica realmente limpa
+cai para <strong>2 dos 25 (8%)</strong>.
 </p>
-<p>PRs que rodaram (<span style="color:var(--verde)">verde</span>) vs. falharam em
-<code>tests_failed</code> (<span style="color:var(--vermelho)">vermelho</span>), de 5 por agente:</p>
-<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:40%">2</div><div class="bar-fill" style="width:60%; background:var(--vermelho)">3</div></div></div>
-<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
-<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
-<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track" style="display:flex"><div class="bar-fill destaque" style="width:20%">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="box destaque">
+  <h4>Como ler os três status (importante para a defesa)</h4>
+  Depois da auditoria, o <em>runner</em> passou a classificar cada PR em um de três
+  desfechos — distinção que é a chave para entender a tabela:
+  <ul style="margin:.3em 0 0">
+    <li><strong><span style="color:var(--verde)">ok</span></strong> — a suíte rodou e
+        <strong>todos</strong> os testes passaram (baseline verde). Aqui cobertura
+        <em>e</em> mutação são confiáveis.</li>
+    <li><strong><span style="color:var(--amarelo)">baseline_failed</span></strong> — a
+        suíte rodou, mas <strong>já tinha testes falhando</strong> (baseline vermelho).
+        A cobertura ainda é medida (com ressalva), mas a <strong>mutação é pulada</strong>:
+        com a suíte quebrada, todo mutante "morreria" trivialmente, gerando um 100% falso.</li>
+    <li><strong><span style="color:var(--vermelho)">tests_failed</span></strong> — a
+        suíte <strong>nem rodou</strong> (faltou dependência, serviço, build…); nenhuma
+        métrica é calculada.</li>
+  </ul>
+</div>
+<p>Distribuição dos três status por agente (5 PRs cada):</p>
+<div class="bar-row"><div class="bar-label">OpenAI Codex</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:20%; background:var(--verde)">1</div><div class="bar-fill" style="width:20%; background:var(--amarelo); color:#222">1</div><div class="bar-fill" style="width:60%; background:var(--vermelho)">3</div></div></div>
+<div class="bar-row"><div class="bar-label">Devin</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:20%; background:var(--verde)">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="bar-row"><div class="bar-label">Copilot</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:20%; background:var(--amarelo); color:#222">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
+<div class="bar-row"><div class="bar-label">Cursor</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:20%; background:var(--amarelo); color:#222">1</div><div class="bar-fill" style="width:80%; background:var(--vermelho)">4</div></div></div>
 <div class="bar-row"><div class="bar-label">Claude Code</div><div class="bar-track" style="display:flex"><div class="bar-fill" style="width:100%; background:var(--vermelho)">5</div></div></div>
-<p>Dos <strong>5 PRs que rodaram</strong>, as métricas dinâmicas:</p>
+<p style="font-size:.85rem"><span style="color:var(--verde)">■ verde = ok</span> ·
+<span style="color:var(--amarelo)">■ amarelo = baseline_failed</span> ·
+<span style="color:var(--vermelho)">■ vermelho = tests_failed</span></p>
+<p>Métricas dos 5 PRs que rodaram, agora <strong>separadas pelo baseline</strong>:</p>
 <table>
-  <thead><tr><th>Agente</th><th>PR</th><th>Patch coverage</th><th>Mutation score</th></tr></thead>
+  <thead><tr><th>Agente</th><th>PR</th><th>Baseline</th><th>Patch coverage</th><th>Mutation score</th></tr></thead>
   <tbody>
-    <tr><td>Copilot</td><td>yutto #539</td><td class="num">93,8%</td><td class="num">100%</td></tr>
-    <tr><td>Devin</td><td>vlmrun-hub #122</td><td class="num">100%</td><td class="num">—</td></tr>
-    <tr><td>OpenAI Codex</td><td>meta-agent #67</td><td class="num">77,2%</td><td class="num">100%</td></tr>
-    <tr><td>Cursor</td><td>MoviePilot #4577</td><td class="num">—</td><td class="num">100%</td></tr>
-    <tr><td>OpenAI Codex</td><td>peepdb #71</td><td class="num">—</td><td class="num">0%</td></tr>
+    <tr><td>Devin</td><td>vlmrun-hub #122</td><td>✅ verde</td><td class="num">100%</td><td class="num">n/d¹</td></tr>
+    <tr><td>OpenAI Codex</td><td>peepdb #71</td><td>✅ verde</td><td class="num">—</td><td class="num">0%</td></tr>
+    <tr><td>Copilot</td><td>yutto #539</td><td>❌ vermelho</td><td class="num">93,8%*</td><td class="num">n/d²</td></tr>
+    <tr><td>OpenAI Codex</td><td>meta-agent #67</td><td>❌ vermelho</td><td class="num">77,2%*</td><td class="num">n/d²</td></tr>
+    <tr><td>Cursor</td><td>MoviePilot #4577</td><td>❌ vermelho</td><td class="num">—</td><td class="num">n/d²</td></tr>
   </tbody>
 </table>
-<p><span style="color:var(--azul-claro)">Cobertura</span> e
-<span style="color:var(--amarelo)">mutação</span> por PR (<em>n/d</em> = métrica indisponível):</p>
-<div style="margin:10px 0">
-  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Copilot · yutto #539</div>
-  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:93.8%">93,8%</div></div></div>
-  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
-</div>
+<p style="font-size:.85rem">¹ sem código mutável (schema) · ² mutação <strong>não medida</strong>
+(baseline vermelho) · * cobertura real, mas pode subestimar (parte da suíte falhou no nosso ambiente).</p>
+<p>Cobertura e mutação por PR, <strong>agrupados pelo baseline</strong>
+(<em>n/d</em> = métrica não disponível):</p>
+<p style="font-weight:600; color:var(--verde); margin:.6em 0 .2em">✅ Baseline verde — medição confiável</p>
 <div style="margin:10px 0">
   <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Devin · vlmrun-hub #122</div>
   <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:100%">100%</div></div></div>
-  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d</div></div>
-</div>
-<div style="margin:10px 0">
-  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">OpenAI Codex · meta-agent #67</div>
-  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:77.2%">77,2%</div></div></div>
-  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
-</div>
-<div style="margin:10px 0">
-  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Cursor · MoviePilot #4577</div>
-  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">n/d</div></div>
-  <div class="bar-row"><div class="bar-label">Mutação</div><div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--amarelo)">100%</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d — não havia código mutável (<em>schema</em> de dados)</div></div>
 </div>
 <div style="margin:10px 0">
   <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">OpenAI Codex · peepdb #71</div>
-  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">n/d</div></div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">— (linhas adicionadas não exercitadas)</div></div>
   <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:var(--vermelho); font-weight:600; font-size:.85rem">0% — todos os mutantes sobreviveram</div></div>
 </div>
+<p style="font-weight:600; color:var(--amarelo); margin:.9em 0 .2em">❌ Baseline vermelho — cobertura com ressalva; mutação NÃO medida</p>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Copilot · yutto #539</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:93.8%">93,8%*</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d — baseline vermelho (6 testes já falhavam)</div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">OpenAI Codex · meta-agent #67</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div class="bar-track"><div class="bar-fill" style="width:77.2%">77,2%*</div></div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d — baseline vermelho (4 testes já falhavam)</div></div>
+</div>
+<div style="margin:10px 0">
+  <div style="font-weight:600; font-size:.9rem; margin-bottom:2px">Cursor · MoviePilot #4577</div>
+  <div class="bar-row"><div class="bar-label">Cobertura</div><div style="color:#888; font-size:.85rem">— (linhas adicionadas não exercitadas)</div></div>
+  <div class="bar-row"><div class="bar-label">Mutação</div><div style="color:#888; font-size:.85rem">n/d — baseline vermelho (3 testes falhavam) + timeout no <code>exec</code></div></div>
+</div>
+<p style="font-size:.85rem">* cobertura real, mas possivelmente <strong>subestimada</strong> — parte da suíte falhou no nosso ambiente de reconstrução.</p>
 <p>
-<strong>Discussão.</strong> A primeira inferência é metodológica e honesta: com
-<em>n</em> = 5, a RQ6 é uma <strong>prova de conceito</strong>, não uma comparação
-entre agentes — o atrito de 80% impede qualquer ranking. Esse atrito é, em si, um
+<strong>Discussão.</strong> A primeira inferência é metodológica e honesta: com tão
+poucos PRs medidos, a RQ6 é uma <strong>prova de conceito</strong>, não um ranking entre
+agentes. O atrito de 80% (nem rodaram) somado aos <strong>3 baselines vermelhos</strong>
+deixa apenas <strong>2 PRs</strong> com medição dinâmica limpa. Esse atrito é, em si, um
 achado: reconstruir e executar suítes de projetos reais em escala é <em>caro e
 instável</em>, o que delimita o que estudos dinâmicos de mineração conseguem cobrir.
 </p>
 <p>
-Entre os poucos que rodaram, o sinal é <strong>positivo, com uma exceção crucial</strong>.
-A cobertura das linhas adicionadas é alta (77,2% a 100%) e o <em>mutation score</em> é
-100% em três casos — ou seja, quando o agente contribui em repos com suíte funcional,
-seu código tende a ser exercitado <em>e</em> os testes pegam os defeitos injetados.
-A exceção é o PR <strong>peepdb #71 (Codex), com mutation score 0%</strong>: todos os
-mutantes <strong>sobreviveram</strong>. Esse caso é a melhor ilustração do <em>porquê</em>
-de medir mutação — a suíte do projeto <em>passou</em>, mas <strong>não verifica de fato
-o código que o agente adicionou</strong> (oráculos ausentes/fracos). É exatamente a
-divergência entre "cobertura" e "eficácia" que a disciplina de testes destaca: passar
-por uma linha não é o mesmo que testá-la.
+A segunda inferência veio de uma <strong>auditoria que evitou uma conclusão errada</strong>.
+Numa primeira leitura, três PRs marcavam <em>mutation score</em> <strong>100%</strong> — o
+que sugeriria "testes fortes". Ao abrir os logs, os três tinham <strong>baseline
+vermelho</strong>: a suíte já falhava <em>antes</em> de qualquer mutação. Nesse cenário o
+cosmic-ray conta <strong>todo</strong> mutante como "morto" (o comando de teste retorna
+erro de qualquer forma) → 100% trivial e <strong>falso</strong>. Implementamos então um
+<strong>controle de baseline</strong> no <em>runner</em> (ver §9): a mutação só é medida
+quando a suíte passa verde; do contrário, o PR recebe status <code>baseline_failed</code>
+e a mutação fica <em>n/d</em> — a cobertura é mantida, com ressalva. Com isso, os três
+100% saem da análise. O que sobra é mais pobre em número, porém <strong>honesto</strong>.
+</p>
+<p>
+Os <strong>dois casos confiáveis</strong> (baseline verde) são, cada um, didáticos — e
+estão detalhados nas caixas a seguir. Em resumo: <strong>vlmrun-hub #122 (Devin)</strong>
+tem cobertura 100% e mutação <em>n/d</em> porque o agente adicionou um <em>schema</em>
+sem lógica a mutar; e <strong>peepdb #71 (Codex)</strong> tem <em>mutation score</em>
+<strong>0%</strong> — a suíte do projeto <em>passa</em>, mas <strong>não verifica</strong>
+o código que o agente adicionou. Este é o contraexemplo mais valioso da seção e ilustra a
+divergência entre "cobertura" e "eficácia": passar por uma linha não é o mesmo que
+testá-la.
 </p>
 <div class="box alerta">
   <h4>peepdb #71: cobertura "—" e mutação 0% dizem o mesmo</h4>
@@ -923,14 +948,52 @@ por uma linha não é o mesmo que testá-la.
     ainda que a suíte passe.
   </p>
 </div>
+<div class="box alerta">
+  <h4>yutto #539 / meta-agent #67 / MoviePilot #4577: por que NÃO medimos mutação neles</h4>
+  Esses três PRs têm o mesmo problema: a suíte do projeto
+  <strong>já falhava antes de qualquer mutação</strong> (<em>baseline vermelho</em>). O
+  teste de mutação só faz sentido se, <strong>sem mutação</strong>, todos os testes
+  passam — esse é o "verde de partida" contra o qual se mede o efeito de estragar o
+  código. Quando o baseline já está vermelho, todo mutante herda a falha: o
+  <code>test-command</code> (<code>pytest -x -q</code>) retorna erro de qualquer jeito, e
+  o cosmic-ray <strong>classifica todos como "mortos"</strong> → 100% trivial e sem
+  significado. No <strong>yutto #539</strong> eram <strong>6 testes</strong> já falhando
+  (58 passando); no <strong>meta-agent #67</strong>, 4 (de 288); no
+  <strong>MoviePilot #4577</strong>, 3 — e este ainda <strong>estourou o timeout</strong>
+  de 1h no <code>exec</code>, então nem completou. As falhas vêm do nosso ambiente de
+  reconstrução (ex.: <code>no such table: systemconfig</code> — banco não inicializado),
+  não necessariamente do agente. <strong>Lição metodológica (já aplicada):</strong> o
+  <em>runner</em> agora só mede mutação quando o baseline está <strong>verde</strong>;
+  nestes três PRs ele atribui o status <code>baseline_failed</code> e deixa a mutação como
+  <em>n/d</em>, mantendo apenas a cobertura, com ressalva (ver §9).
+</div>
+<div class="box destaque">
+  <h4>vlmrun-hub #122 (Devin): cobertura 100%, mutação n/d — e está tudo certo</h4>
+  Caso oposto e <strong>legítimo</strong>: baseline <strong>verde</strong>
+  (25 testes passando), cobertura das linhas adicionadas em <strong>100%</strong>, e
+  mutação <em>n/d</em> <strong>não</strong> por falha, mas porque <strong>não havia o que
+  mutar</strong>. O código que o agente adicionou é um <em>schema</em> de dados
+  (<code>nutrition_facts_label.py</code> — uma classe com campos tipados, sem lógica:
+  comparações, operadores, constantes). O cosmic-ray rodou o <code>init</code> e
+  <strong>não gerou nenhum mutante</strong>; sem mutantes, não há
+  "% de mutantes mortos" a calcular (e o outro arquivo, um <code>__init__.py</code>, nem
+  apareceu no checkout). É um resultado <strong>coerente</strong>: código declarativo é
+  totalmente coberto e, por definição, não tem comportamento para um teste de mutação
+  avaliar. Contrasta bem com o peepdb #71 (lógica <em>sem</em> teste) e com os 100%
+  falsos (baseline vermelho).
+</div>
 <p>
-Por fim, os "—" na tabela são honestos: indicam que uma das métricas não pôde ser
-computada naquele PR (p.ex. nenhuma linha adicionada mapeada ao relatório de cobertura,
-ou o cosmic-ray não encontrou código mutável no recorte). Em suma: a RQ6
-<strong>valida o método</strong> (o pipeline produz cobertura e mutação reais) e
-oferece um <strong>sinal qualitativo</strong> — incluindo um contraexemplo valioso —,
-mas exige uma amostra maior e mais robusta a falhas de instalação para sustentar
-conclusões por agente (ver §7 e §8).
+Por fim, os "—" e os <em>n/d</em> na tabela são honestos: marcam métricas que não puderam
+ser calculadas (linhas adicionadas não exercitadas, ausência de código mutável, ou
+baseline vermelho). Em suma: a RQ6 <strong>valida o método</strong> (o pipeline produz
+cobertura e mutação) e oferece um <strong>sinal qualitativo</strong> — com um contraexemplo
+valioso (peepdb #71) —, mas a auditoria dos logs expôs e <strong>corrigiu</strong> uma
+limitação séria: a mutação só é confiável com <strong>baseline verde</strong>. O
+<em>runner</em> já foi ajustado para isso (status <code>baseline_failed</code> + mutação
+<em>n/d</em>; ver §9), o que removeu três 100% espúrios. Para sustentar conclusões
+<em>por agente</em>, a RQ6 ainda exige uma amostra maior e mais robusta a falhas de
+instalação (ver §7 e §8) — hoje ela tem apenas <strong>2 medições limpas</strong>, valiosas
+como ilustração, não como comparação.
 </p>
 
 <div class="box destaque">
@@ -942,8 +1005,9 @@ conclusões por agente (ver §7 e §8).
   (4) a RQ6 fecha o arco indo da qualidade <em>estática</em> à <em>dinâmica</em>
   (cobertura + mutação) — não só se o código é limpo, mas se ele está de fato
   <strong>protegido por testes eficazes</strong>; de forma exploratória (alto atrito de
-  execução, <em>n</em> = 5), já revelou um caso em que a suíte passa mas não testa o
-  código do agente (<em>mutation score</em> 0). A mensagem para mantenedores e
+  execução — só <strong>2 de 25</strong> PRs renderam medição limpa após o controle de
+  baseline), já revelou um caso em que a suíte passa mas não testa o
+  código do agente (peepdb #71, <em>mutation score</em> 0). A mensagem para mantenedores e
   para a tese: confiar em contribuições de agentes exige olhar além da taxa de
   merge — controlando o tipo de tarefa, inspecionando o código e testando-o.
 </div>
@@ -1012,12 +1076,27 @@ complexidade ciclomática exclui um punhado de fragmentos <em>outliers</em> (4 p
 que clonam, instalam e executam a suíte com sucesso. Na execução,
 <strong>apenas 5 dos 25 PRs (20%) rodaram</strong>; os outros 20 falharam em
 <code>tests_failed</code> (deps de teste ausentes, serviços, build ou versão de
-Python — ver §6.6). Mesmo com as mitigações do runner (instalar extras de teste,
-venv isolado, logs por PR), o <em>n</em> efetivo é pequeno e provavelmente
-<strong>enviesado</strong> para projetos mais fáceis de instalar — o que pode não ser
-aleatório em relação à qualidade. Por isso a tese reporta a taxa de sucesso e trata
-os resultados da RQ6 como <strong>exploratórios</strong> (prova de conceito), sem
-ranking por agente.
+Python — ver §6.6). E, desses 5, só <strong>2 tinham baseline verde</strong> (ver a
+ameaça seguinte), então a medição dinâmica <em>limpa</em> cai para <strong>2 de 25
+(8%)</strong>. Mesmo com as mitigações do runner (instalar extras de teste, venv isolado,
+logs por PR), o <em>n</em> efetivo é pequeno e provavelmente <strong>enviesado</strong>
+para projetos mais fáceis de instalar — o que pode não ser aleatório em relação à
+qualidade. Por isso a tese reporta a taxa de sucesso e trata os resultados da RQ6 como
+<strong>exploratórios</strong> (prova de conceito), sem ranking por agente.
+</p>
+<p>
+<strong>Mutação contaminada por baseline vermelho.</strong> A auditoria dos logs
+revelou uma ameaça adicional, mais sutil que o atrito: dos 4 PRs com
+<em>mutation score</em> medido, <strong>3 marcaram 100% falsos</strong> porque a suíte
+do projeto <em>já falhava antes de qualquer mutação</em> (baseline vermelho — ex.: banco
+não inicializado, <code>no such table</code>). Quando o baseline não passa limpo, o
+<code>cosmic-ray</code> conta todo mutante como "morto" e o 100% perde sentido. Os
+únicos resultados de mutação confiáveis foram os de baseline verde
+(<strong>peepdb #71 = 0%</strong> e <strong>vlmrun-hub #122 = n/d</strong>). Mitigação
+<strong>já implementada</strong>: o runner agora valida o baseline automaticamente — PRs
+de suíte vermelha recebem status <code>baseline_failed</code> e têm a mutação marcada como
+<em>n/d</em> (mantendo só a cobertura, com ressalva), de modo que os três 100% espúrios
+não entram mais na análise (ver §6.6 e §9).
 </p>
 <h3>Validade externa</h3>
 <p>
@@ -1054,9 +1133,14 @@ em volta.
       implementados</em>, ver §6.6): o <em>runner</em>
       (<code>src/RQ6_step2_mutation_and_coverage.py</code>) reconstrói os repos e mede
       <strong>cobertura</strong> (<code>pytest-cov</code>) e <strong>mutation
-      score</strong> (<code>cosmic-ray</code>) do código dos agentes. Próximos passos:
-      executar o runner na amostra, ampliar o tamanho, e explorar <em>test smells</em>
-      (ex.: testes super-mockados) nos testes que os agentes escrevem.</li>
+      score</strong> (<code>cosmic-ray</code>) do código dos agentes. A
+      <strong>validação automática de baseline</strong> já foi adicionada (status
+      <code>baseline_failed</code> + mutação <em>n/d</em> quando a suíte não passa limpa —
+      ver §6.6/§9). Próximos passos: <strong>(a)</strong> tratar o <em>timeout</em> do
+      <code>exec</code> explicitamente como resultado parcial/inválido; <strong>(b)</strong>
+      ampliar o tamanho da amostra para obter mais PRs de baseline verde; e
+      <strong>(c)</strong> explorar <em>test smells</em> (ex.: testes super-mockados) nos
+      testes que os agentes escrevem.</li>
   <li><strong>Métricas de tamanho e complexidade</strong>: relacionar linhas
       adicionadas/removidas e número de arquivos com a chance de aceitação.</li>
   <li><strong>Tempo de turnaround</strong>: medir <code>merged_at − created_at</code>
@@ -1095,7 +1179,7 @@ mineração de repositórios (MSR) e as extensões previstas em §8.
     <tr><td><code>lizard</code> / <code>radon</code></td><td>RQ5 — complexidade ciclomática e <em>maintainability index</em> do código adicionado.</td></tr>
     <tr><td><code>bandit</code></td><td>RQ5 (futuro) — varredura de padrões inseguros (CWE) em código Python.</td></tr>
     <tr><td><code>pytest</code> / <code>pytest-cov</code></td><td>RQ6 — executa a suíte de testes do repo e mede a cobertura das linhas adicionadas.</td></tr>
-    <tr><td><code>cosmic-ray</code></td><td>RQ6 — teste de mutação (multiplataforma): injeta defeitos no código do agente e mede o <em>mutation score</em>.</td></tr>
+    <tr><td><code>cosmic-ray</code></td><td>RQ6 — teste de mutação (multiplataforma): injeta defeitos nos arquivos que o agente adicionou/alterou (arquivo inteiro) e mede o <em>mutation score</em>.</td></tr>
   </tbody>
 </table>
 <p>
@@ -1148,6 +1232,17 @@ python src/RQ6_step1_sample_for_testing.py        # gera outputs/RQ6_step1_test_
 python src/RQ6_step2_mutation_and_coverage.py             # gera outputs/RQ6_step2_results.csv
 #    AIDEV_RUN_LIMIT=3      -> processa só os 3 primeiros PRs (teste rápido)
 #    AIDEV_SKIP_MUTATION=1  -> mede só cobertura (mutação é lenta)</code></pre>
+<p>
+<strong>Controle de baseline na RQ6 (§6.6).</strong> O runner do passo 6 só mede
+<em>mutation score</em> quando a suíte do projeto passa <strong>verde</strong> (todos os
+testes passam sem nenhuma mutação). Cada PR recebe um de três status:
+<code>ok</code> (baseline verde — cobertura e mutação válidas),
+<code>baseline_failed</code> (a suíte rodou mas já tinha testes falhando — a cobertura é
+mantida com ressalva, mas a mutação fica <em>n/d</em> para evitar um 100% trivial) e
+<code>tests_failed</code> (a suíte nem rodou). Esse controle foi adicionado após uma
+auditoria que revelou três <em>mutation scores</em> de 100% espúrios, causados por
+baselines vermelhos.
+</p>
 <p>
 Por padrão os scripts leem direto do Hugging Face. Para usar uma cópia local dos
 <code>.parquet</code>, defina a variável de ambiente <code>AIDEV_DATA</code>:

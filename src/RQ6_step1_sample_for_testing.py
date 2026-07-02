@@ -38,7 +38,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # Tamanho da amostra final (estratificada por agente). 0 = todos os candidatos.
 # Padrão 25 (5 por agente), igual ao documentado no guia (§6.6).
-SAMPLE = int(os.environ.get("AIDEV_TEST_SAMPLE", "25"))
+SAMPLE = int(os.environ.get("AIDEV_TEST_SAMPLE", "50"))
 
 # Regex que reconhece arquivos de TESTE pelas convenções comuns em Python:
 #   - pasta tests/ ou test/ ou __tests__/      -> (^|/)(tests?|__tests__)/
